@@ -18,11 +18,14 @@ This project is not ready for public release until every required gate below has
 - [x] `bash scripts/verify.sh` and `bash scripts/smoke.sh` pass from a clean checkout.
 - [x] No secrets, source media, cache files, generated outputs, or local databases are tracked by Git.
 - [x] Worker preflight can check local and SSH targets without modifying remote machines.
+- [x] Repository has explicit MIT license text.
+- [x] Release check builds `sdist` and wheel artifacts and validates metadata with `twine check`.
 
 ## Current Evidence
 
-- `bash scripts/verify.sh`: harness check plus 99 tests pass on `main`.
+- `bash scripts/verify.sh`: harness check plus 102 tests pass on `feature/release-packaging-hardening`.
 - `bash scripts/smoke.sh`: CLI help renders successfully.
+- `bash scripts/release_check.sh`: harness check, 102 tests, CLI smoke, `python -m build`, `twine check`, clean wheel install smoke, and tracked-file hygiene guard pass on `feature/release-packaging-hardening`.
 - Process-level CLI E2E smoke passed on `main` from a temp shared root at `/tmp/mediaorchard-main-cli-e2e.GldT3h/output/job_027f3f57c6f2`: `controller start`, `submit`, `worker start --once`, `jobs`, and artifact checks for `subtitle.srt`, `transcript.txt`, `transcript.json`, and `quality_report.json`.
 - Process-level real-media CLI E2E smoke passed on `main` from `/tmp/mediaorchard-main-real-cli-e2e.B8Gvyp/output/job_825c8527e177`: generated an input mp4 with `say` and `ffmpeg`, then ran `controller start`, `submit`, `worker start --execution-mode real --once`, `jobs`, and artifact checks for `input_meta.json`, `audio.wav`, `subtitle.srt`, `transcript.txt`, `transcript.json`, `quality_report.json`, `report.md`, and passed quality status.
 - Git repository initialized on `main`.
@@ -39,6 +42,7 @@ This project is not ready for public release until every required gate below has
 - Read-only Worker preflight command added as `mediaorchard doctor worker`.
 - `mediaorchard doctor worker --target local --target wangyan@192.168.50.8 --target wangyan@192.168.50.9 --shared-root /Volumes/MediaOrchard --runtime-python python3 --whisper-python python3` found local system `python3` is 3.9.6, local ffmpeg/ffprobe/mlx_whisper are available, and local shared root is missing; both remotes have system `python3` 3.9.6 plus ffmpeg/ffprobe, but lack `mlx_whisper` and `/Volumes/MediaOrchard`.
 - Worker preflight timeout handling is covered by a regression test so a slow local command or SSH target is reported as a failed check instead of crashing the diagnostic run.
+- Release metadata tests verify `LICENSE`, release build tooling in the dev extra, and executable `scripts/release_check.sh` coverage for build, metadata, clean install, and hygiene gates.
 
 ## Current Release Status
 

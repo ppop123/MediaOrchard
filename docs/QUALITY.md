@@ -28,6 +28,8 @@
 - Local real-media smoke produced transcript, subtitle, quality report, human report, extracted audio, media metadata, and command logs with `ffmpeg`, `ffprobe`, and `mlx_whisper`.
 - Process-level CLI E2E smoke verified `controller start`, `submit`, `worker start --once`, `jobs`, and expected artifact files from a temp shared root in both deterministic and real-media modes.
 - Read-only Worker preflight verified the current local and SSH target readiness state without modifying remote machines.
+- Release metadata coverage verifies explicit MIT license text, release build tooling in the dev extra, and executable release check script.
+- Release check builds `sdist` and wheel artifacts in an isolated build directory, validates them with `twine check`, installs the wheel into a temporary virtual environment, and checks for tracked local artifacts, secrets, databases, and media files.
 
 ## Partial Surfaces
 

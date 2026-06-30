@@ -25,8 +25,11 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "build>=1.2",
+  # Starlette 1.x TestClient imports httpx2; keep this until that test client contract changes.
   "httpx2>=2.5",
   "pytest>=8.3",
+  "twine>=5.1",
 ]
 
 [project.scripts]

@@ -17,3 +17,10 @@
 - This project started as a planning-only directory and is now initialized as a Git repo on `main`.
 - System Python is 3.14.3; project-local `.venv` is used for dependencies.
 - `pytest` is installed only in `.venv`, not globally.
+- `httpx2` is required by the current Starlette 1.x `TestClient` path: `starlette.testclient` imports `httpx2 as httpx`, and Starlette metadata advertises `httpx2>=2.0.0` for its `full` extra. It is not an accidental misspelling of `httpx` in the current dependency set.
+
+## Release Packaging Findings
+
+- `python -m build` was unavailable until release build tooling was added to the dev extra.
+- Public release needs explicit license text in the repository, not only `license = "MIT"` in `pyproject.toml`.
+- `scripts/release_check.sh` now verifies tests, CLI smoke, package build, `twine check`, clean wheel install smoke, and tracked-file hygiene in one command.

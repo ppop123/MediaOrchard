@@ -293,6 +293,14 @@ bash scripts/verify.sh
 bash scripts/smoke.sh
 ```
 
+Release candidate verification:
+
+```bash
+bash scripts/release_check.sh
+```
+
+Run this after the setup commands above. `release_check.sh` runs the harness check, test suite, CLI smoke, package build for `sdist` and wheel, `twine check`, a clean wheel install smoke in a temporary virtual environment, and a tracked-file hygiene guard for local artifacts, secrets, databases, and media files.
+
 Focused checks:
 
 ```bash
@@ -302,6 +310,7 @@ Focused checks:
 .venv/bin/pytest tests/test_tool_execution.py tests/test_mock_pipeline.py -q
 .venv/bin/pytest tests/test_real_media_smoke.py -q
 .venv/bin/pytest tests/test_worker_preflight.py -q
+.venv/bin/pytest tests/test_release_metadata.py -q
 .venv/bin/pytest tests/test_db_persistence.py -q
 ```
 
