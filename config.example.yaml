@@ -1,0 +1,66 @@
+controller:
+  host: "0.0.0.0"
+  port: 8765
+  database_url: "sqlite:///mediaorchard.db"
+  api_key_hash: "sha256:replace-with-generated-hash"
+  api_key_hash_algorithm: "sha256"
+
+worker:
+  heartbeat_interval_seconds: 10
+  claim_interval_seconds: 2
+  shutdown_grace_seconds: 10
+
+storage:
+  shared_root: "/Volumes/MediaOrchard"
+  inbox_dir: "/Volumes/MediaOrchard/inbox"
+  output_dir: "/Volumes/MediaOrchard/output"
+  logs_dir: "/Volumes/MediaOrchard/logs"
+  local_cache_dir: "/tmp/mediaorchard-cache"
+
+scheduler:
+  heartbeat_timeout_seconds: 30
+  schedule_interval_seconds: 5
+  default_priority: 5
+  cooldown_minutes: 10
+  max_cpu_percent: 85
+  max_memory_percent: 85
+  min_free_disk_gb: 20
+
+recovery:
+  default_max_retries: 2
+  retry_backoff_seconds: 10
+
+logging:
+  format: "json"
+  level: "INFO"
+  redact_fields: ["api_key", "authorization", "token", "secret"]
+
+whisper:
+  backend: "mlx-whisper"
+  default_model: "mlx-community/whisper-large-v3-turbo"
+  fallback_model: "mlx-community/whisper-medium"
+  default_language: "auto"
+  output_formats: ["txt", "srt", "json"]
+
+ffmpeg:
+  audio_sample_rate: 16000
+  audio_channels: 1
+  overwrite_outputs: false
+
+nodes:
+  mac-studio:
+    max_ffmpeg_jobs: 2
+    max_whisper_jobs: 1
+    avoid_on_battery: false
+
+  mac-mini:
+    max_ffmpeg_jobs: 1
+    max_whisper_jobs: 1
+    avoid_on_battery: false
+
+  macbook-pro:
+    max_ffmpeg_jobs: 1
+    max_whisper_jobs: 1
+    avoid_on_battery: true
+    max_runtime_on_battery_minutes: 20
+

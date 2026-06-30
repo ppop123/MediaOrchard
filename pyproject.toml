@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mediaorchard"
+version = "0.1.0"
+description = "Local multi-Mac media processing scheduler for ffmpeg and whisper workloads."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [
+  { name = "MediaOrchard contributors" }
+]
+dependencies = [
+  "fastapi>=0.115",
+  "psutil>=6.0",
+  "pydantic>=2.8",
+  "pydantic-settings>=2.4",
+  "pyyaml>=6.0",
+  "typer>=0.12",
+  "uvicorn>=0.30",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3",
+]
+
+[project.scripts]
+mediaorchard = "mediaorchard.cli.main:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["mediaorchard"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
