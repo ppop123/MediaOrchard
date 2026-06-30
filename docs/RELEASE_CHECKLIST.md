@@ -11,14 +11,14 @@ This project is not ready for public release until every required gate below has
 - [x] Worker lifecycle tests cover registration, heartbeat, assigned-step claim lease, node ownership checks, graceful shutdown, and stale completion rejection.
 - [x] Tool execution uses structured `list[str]` argv with `shell=False`.
 - [x] Mock `video_to_subtitle` pipeline completes without real media tools.
-- [ ] Local real-media smoke test produces `srt`, `txt`, `json`, `quality_report.json`, `report.md`, and logs.
+- [x] Local real-media smoke test produces `srt`, `txt`, `json`, `quality_report.json`, `report.md`, and logs.
 - [x] README documents setup, config, API key hashing, demo commands, and troubleshooting.
 - [x] `bash scripts/verify.sh` and `bash scripts/smoke.sh` pass from a clean checkout.
 - [x] No secrets, source media, cache files, generated outputs, or local databases are tracked by Git.
 
 ## Current Evidence
 
-- `bash scripts/verify.sh`: harness check plus 71 tests pass on `feature/persistence-coverage`.
+- `bash scripts/verify.sh`: harness check plus 75 tests pass on `feature/real-media-smoke`.
 - `bash scripts/smoke.sh`: CLI help renders successfully.
 - Git repository initialized on `main`.
 - Controller API and state machine tests are merged into `main`.
@@ -30,7 +30,8 @@ This project is not ready for public release until every required gate below has
 - README documents setup, configuration, API key hashing, Controller API startup, mock demo commands, verification commands, and troubleshooting on `feature/docs-readme-release`.
 - Clean checkout verification passed from `/tmp/mediaorchard-clean-check.MlyHUq` after fresh clone, new venv, editable install, `bash scripts/verify.sh`, and `bash scripts/smoke.sh`.
 - Git tracked-file hygiene audit found no tracked local DB files, env/config-local files, media files, cache/work/output/log directories, pyc files, or actual API key/hash patterns; placeholder `<shared-secret>` references remain documented in `plan.md`.
+- Local real-media smoke passed at `/tmp/mediaorchard-real-smoke.4Jc4aF/output/real_smoke` using macOS `say`, `ffmpeg` 7.1.1, `ffprobe` 7.1.1, system Python `mlx-whisper` 0.4.3, and model `mlx-community/whisper-tiny`; produced `subtitle.srt`, `transcript.txt`, `transcript.json`, `quality_report.json`, `report.md`, `audio.wav`, `input_meta.json`, and logs.
 
 ## Current Release Status
 
-Not releasable yet. The repository has verified Controller/API, database persistence, scheduler, Worker lifecycle, structured tool execution, mock media pipeline foundations, release documentation, clean-checkout verification, and repository hygiene. The remaining required gate is a local real-media smoke test.
+Not releasable yet. Release evidence gates are now covered, including one local synthetic real-media smoke run on the developer Mac. The remaining product gap before a polished public 0.1 is full Controller/Worker CLI process orchestration, which is currently documented as a pre-release limitation in `README.md`.

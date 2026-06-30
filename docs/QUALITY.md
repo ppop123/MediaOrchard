@@ -22,9 +22,10 @@
 - README covers setup, configuration, API key hashing, Controller API startup, mock demo commands, verification, and troubleshooting.
 - Clean-checkout verification passes after fresh clone, new virtualenv, editable install, `bash scripts/verify.sh`, and `bash scripts/smoke.sh`.
 - Tracked-file hygiene audit found no local databases, env/config-local files, source media, generated media outputs, cache/work/output/log directories, pyc files, or actual API key/hash patterns.
+- Local real-media smoke produced transcript, subtitle, quality report, human report, extracted audio, media metadata, and command logs with `ffmpeg`, `ffprobe`, and `mlx_whisper`.
 
 ## Partial Surfaces
 
 - MVP Worker authentication still uses a shared API key plus node-id header binding; per-node credentials or mTLS are post-MVP hardening.
-- Real ffmpeg/whisper execution still needs local media smoke coverage.
-- End-to-end production media processing cannot be claimed until the real-media path is verified on the target Macs.
+- Full Controller/Worker CLI process orchestration is still a pre-release product gap.
+- Multi-Mac real-media execution still needs validation on the target Worker machines.

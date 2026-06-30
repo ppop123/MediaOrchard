@@ -19,9 +19,7 @@ Implemented foundations:
 
 Still pending before a public 0.1 release:
 
-- Real `ffmpeg`/`ffprobe`/`mlx-whisper` smoke test.
 - Production Worker process loop and full CLI orchestration.
-- Clean-checkout release verification and repository hygiene audit.
 
 ## Requirements
 
@@ -165,6 +163,31 @@ Expected mock output files:
 
 ```text
 /tmp/mediaorchard-demo/output/job_demo/
+  input_meta.json
+  audio.wav
+  transcript.txt
+  transcript.json
+  subtitle.srt
+  quality_report.json
+  report.md
+  logs/
+```
+
+Real-media smoke demo on a Mac with `say`, `ffmpeg`, `ffprobe`, and a Python executable that can import `mlx_whisper`:
+
+```bash
+smoke_root="$(mktemp -d /tmp/mediaorchard-real-smoke.XXXXXX)"
+.venv/bin/python scripts/real_media_smoke.py \
+  --root "$smoke_root" \
+  --python python3 \
+  --model mlx-community/whisper-tiny \
+  --timeout-seconds 180
+```
+
+Expected real smoke output files:
+
+```text
+$smoke_root/output/real_smoke/
   input_meta.json
   audio.wav
   transcript.txt

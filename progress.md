@@ -12,4 +12,5 @@
 - Added release model persistence coverage for Node, Job, Plan, Step, ToolCall, AgentDecision, and QualityReport records.
 - Expanded README with setup, configuration, API key hashing, demo commands, verification, and troubleshooting.
 - Verified clean checkout install/test/smoke flow and tracked-file hygiene for release.
-- Current verification target: `bash scripts/verify.sh` with 71 passing tests; `bash scripts/smoke.sh` renders CLI help.
+- Added and ran local real-media smoke with `say`, `ffmpeg`, `ffprobe`, and `mlx_whisper`; artifacts passed quality checks.
+- Current verification target: `bash scripts/verify.sh` with 75 passing tests; `bash scripts/smoke.sh` renders CLI help.
