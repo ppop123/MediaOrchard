@@ -18,6 +18,8 @@ class PreflightCheck:
 class WorkerPreflightConfig:
     target: str = "local"
     shared_root: Path = Path("/Volumes/MediaOrchard")
+    shared_root_marker: str | Path | None = None
+    shared_root_marker_value: str | None = None
     runtime_python_executable: str = "python3"
     whisper_python_executable: str = "python3"
     timeout_seconds: int = 10
@@ -52,6 +54,15 @@ def run_worker_preflight(
         check_mlx_whisper(config, runner, whisper_python),
         check_shared_root(config, runner, shared_root),
     ]
+    if config.shared_root_marker is not None:
+        marker_path = resolve_marker_path(config.shared_root, config.shared_root_marker)
+        checks.append(
+            check_shared_root_marker(
+                config,
+                runner,
+                shlex.quote(str(marker_path)),
+            )
+        )
     return WorkerPreflightResult(target=config.target, checks=checks)
 
 
@@ -118,6 +129,33 @@ def check_shared_root(
     completed = runner(build_command_argv(config.target, script), config.timeout_seconds)
     ok = completed.returncode == 0
     return PreflightCheck("shared_root", ok, _detail(completed) if not ok else completed.stdout.strip())
+
+
+def resolve_marker_path(shared_root: Path, marker: str | Path) -> Path:
+    expanded_marker = Path(marker).expanduser()
+    if expanded_marker.is_absolute():
+        return expanded_marker
+    return shared_root.expanduser() / expanded_marker
+
+
+def check_shared_root_marker(
+    config: WorkerPreflightConfig,
+    runner: CompletedProcessRunner,
+    marker_path: str,
+) -> PreflightCheck:
+    completed = runner(build_command_argv(config.target, f"cat {marker_path}"), config.timeout_seconds)
+    if completed.returncode != 0:
+        return PreflightCheck("shared_root_marker", False, _detail(completed))
+    actual = completed.stdout.strip()
+    expected = config.shared_root_marker_value
+    if expected is not None and actual != expected:
+        return PreflightCheck(
+            "shared_root_marker",
+            False,
+            f"expected {expected!r}, found {actual!r}",
+        )
+    # Without an expected value, the marker check intentionally proves readability only.
+    return PreflightCheck("shared_root_marker", True, actual)
 
 
 def build_command_argv(target: str, script: str) -> list[str]:

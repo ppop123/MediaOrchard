@@ -229,11 +229,15 @@ mediaorchard doctor worker \
   --target wangyan@192.168.50.8 \
   --target wangyan@192.168.50.9 \
   --shared-root /Volumes/MediaOrchard \
+  --shared-root-marker .mediaorchard-shared-root-id \
+  --shared-root-marker-value "$SHARED_ROOT_MARKER_VALUE" \
   --runtime-python python3 \
   --whisper-python python3
 ```
 
-The command is read-only. It checks the Python version used to run the Worker, `ffmpeg`, `ffprobe`, the Python executable used for `mlx_whisper`, and the shared root directory. It returns exit code `1` when any target is not ready.
+The command is read-only. It checks the Python version used to run the Worker, `ffmpeg`, `ffprobe`, the Python executable used for `mlx_whisper`, and the shared root directory. When `--shared-root-marker` and `--shared-root-marker-value` are provided, it also reads a marker file under the shared root and verifies every target sees the expected token. Use this marker before multi-machine claims: identical local directories at the same path are not enough; the path must point at the same shared storage. It returns exit code `1` when any target is not ready.
+
+Generate the marker token from the machine that owns the real shared root, for example `uuidgen > /Volumes/MediaOrchard/.mediaorchard-shared-root-id`, then export the file contents as `SHARED_ROOT_MARKER_VALUE` before running preflight.
 
 Worker bootstrap dry-run:
 
@@ -338,10 +342,12 @@ For release decisions and the exact multi-machine promotion boundary, use [RELEA
 Multi-machine release environment check:
 
 ```bash
+export SHARED_ROOT_MARKER=.mediaorchard-shared-root-id
+export SHARED_ROOT_MARKER_VALUE='replace-with-token-from-the-shared-root-marker'
 bash scripts/release_env_check.sh
 ```
 
-This check is read-only for SSH targets. It runs local and remote Worker preflight checks, builds a temporary wheel unless `MEDIAORCHARD_WHEEL` points to an existing one, and prints the `worker-bootstrap --copy-wheel` dry-run for the configured targets. It exits non-zero while Python, whisper, media tools, or the shared root are not ready.
+This check is read-only for SSH targets. It runs local and remote Worker preflight checks, builds a temporary wheel unless `MEDIAORCHARD_WHEEL` points to an existing one, and prints the `worker-bootstrap --copy-wheel` dry-run for the configured targets. If `SHARED_ROOT_MARKER` and `SHARED_ROOT_MARKER_VALUE` are set, the preflight also proves each target can read the same shared storage marker. It exits non-zero while Python, whisper, media tools, the shared root, or the marker are not ready.
 
 Focused checks:
 
@@ -366,6 +372,10 @@ Regenerate the hash with `hash_api_key`, confirm the Controller uses the hash, a
 `shared_root_missing` or `shared_root_mismatch`
 
 Confirm the shared root exists, is a directory, and resolves to the same path on Controller and Worker.
+
+`shared_root_marker`
+
+Confirm the marker file exists inside the real shared root, contains the expected `SHARED_ROOT_MARKER_VALUE`, and is read through the same shared storage from every target.
 
 `path is outside allowlisted roots`
 

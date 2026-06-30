@@ -14,6 +14,8 @@ echo "MediaOrchard release environment check (read-only)."
 echo "This script does not execute remote bootstrap."
 
 shared_root="${SHARED_ROOT:-/Volumes/MediaOrchard}"
+shared_root_marker="${SHARED_ROOT_MARKER:-}"
+shared_root_marker_value="${SHARED_ROOT_MARKER_VALUE:-}"
 install_root="${INSTALL_ROOT:-/Users/wangyan/.mediaorchard}"
 worker_python="${WORKER_PYTHON:-/opt/homebrew/bin/python3.14}"
 local_runtime_python="${LOCAL_RUNTIME_PYTHON:-.venv/bin/python}"
@@ -24,6 +26,17 @@ local_preflight_targets="${LOCAL_PREFLIGHT_TARGETS-local}"
 remote_preflight_targets="${REMOTE_PREFLIGHT_TARGETS-wangyan@192.168.50.8 wangyan@192.168.50.9}"
 bootstrap_targets="${BOOTSTRAP_TARGETS-wangyan@192.168.50.8 wangyan@192.168.50.9}"
 status=0
+preflight_marker_args=()
+if [ -n "$shared_root_marker_value" ] && [ -z "$shared_root_marker" ]; then
+  echo "SHARED_ROOT_MARKER_VALUE requires SHARED_ROOT_MARKER." >&2
+  exit 1
+fi
+if [ -n "$shared_root_marker" ]; then
+  preflight_marker_args+=("--shared-root-marker" "$shared_root_marker")
+fi
+if [ -n "$shared_root_marker_value" ]; then
+  preflight_marker_args+=("--shared-root-marker-value" "$shared_root_marker_value")
+fi
 
 run_step() {
   local title="$1"
@@ -58,24 +71,46 @@ fi
 
 if [ "${#local_targets[@]}" -gt 0 ]; then
   set_target_args "${local_targets[@]}"
-  run_step "Local Worker preflight" \
-    "$python_bin" -m mediaorchard.cli.main doctor worker \
-    "${target_args_result[@]}" \
-    --shared-root "$shared_root" \
-    --runtime-python "$local_runtime_python" \
-    --whisper-python "$local_whisper_python" \
-    --timeout-seconds "$timeout_seconds"
+  if [ "${#preflight_marker_args[@]}" -gt 0 ]; then
+    run_step "Local Worker preflight" \
+      "$python_bin" -m mediaorchard.cli.main doctor worker \
+      "${target_args_result[@]}" \
+      --shared-root "$shared_root" \
+      "${preflight_marker_args[@]}" \
+      --runtime-python "$local_runtime_python" \
+      --whisper-python "$local_whisper_python" \
+      --timeout-seconds "$timeout_seconds"
+  else
+    run_step "Local Worker preflight" \
+      "$python_bin" -m mediaorchard.cli.main doctor worker \
+      "${target_args_result[@]}" \
+      --shared-root "$shared_root" \
+      --runtime-python "$local_runtime_python" \
+      --whisper-python "$local_whisper_python" \
+      --timeout-seconds "$timeout_seconds"
+  fi
 fi
 
 if [ "${#remote_targets[@]}" -gt 0 ]; then
   set_target_args "${remote_targets[@]}"
-  run_step "Remote Worker preflight" \
-    "$python_bin" -m mediaorchard.cli.main doctor worker \
-    "${target_args_result[@]}" \
-    --shared-root "$shared_root" \
-    --runtime-python "$worker_python" \
-    --whisper-python "$remote_whisper_python" \
-    --timeout-seconds "$timeout_seconds"
+  if [ "${#preflight_marker_args[@]}" -gt 0 ]; then
+    run_step "Remote Worker preflight" \
+      "$python_bin" -m mediaorchard.cli.main doctor worker \
+      "${target_args_result[@]}" \
+      --shared-root "$shared_root" \
+      "${preflight_marker_args[@]}" \
+      --runtime-python "$worker_python" \
+      --whisper-python "$remote_whisper_python" \
+      --timeout-seconds "$timeout_seconds"
+  else
+    run_step "Remote Worker preflight" \
+      "$python_bin" -m mediaorchard.cli.main doctor worker \
+      "${target_args_result[@]}" \
+      --shared-root "$shared_root" \
+      --runtime-python "$worker_python" \
+      --whisper-python "$remote_whisper_python" \
+      --timeout-seconds "$timeout_seconds"
+  fi
 fi
 
 if [ "${#bootstrap_target_values[@]}" -gt 0 ]; then

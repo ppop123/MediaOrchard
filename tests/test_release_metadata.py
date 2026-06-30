@@ -98,6 +98,67 @@ def test_release_env_check_script_runs_preflight_and_bootstrap_dry_run(tmp_path)
     assert "--execute" not in calls
 
 
+def test_release_env_check_script_passes_shared_root_marker_when_configured(tmp_path):
+    script = ROOT / "scripts" / "release_env_check.sh"
+    fake_python = tmp_path / "python"
+    calls_log = tmp_path / "calls.log"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\n"
+        "printf '%s\\n' \"$*\" >> \"$CALLS_LOG\"\n"
+        "exit 0\n"
+    )
+    fake_python.chmod(fake_python.stat().st_mode | stat.S_IXUSR)
+
+    result = subprocess.run(
+        ["bash", str(script)],
+        cwd=ROOT,
+        env={
+            "PATH": "/usr/bin:/bin",
+            "PYTHON_BIN": str(fake_python),
+            "CALLS_LOG": str(calls_log),
+            "LOCAL_PREFLIGHT_TARGETS": "local",
+            "REMOTE_PREFLIGHT_TARGETS": "wangyan@192.168.50.8",
+            "BOOTSTRAP_TARGETS": "",
+            "SHARED_ROOT_MARKER": ".mediaorchard-shared-root-id",
+            "SHARED_ROOT_MARKER_VALUE": "release-root-token",
+        },
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0
+    calls = calls_log.read_text()
+    assert "--shared-root-marker .mediaorchard-shared-root-id" in calls
+    assert "--shared-root-marker-value release-root-token" in calls
+
+
+def test_release_env_check_script_rejects_marker_value_without_marker(tmp_path):
+    script = ROOT / "scripts" / "release_env_check.sh"
+    fake_python = tmp_path / "python"
+    fake_python.write_text("#!/usr/bin/env bash\nexit 0\n")
+    fake_python.chmod(fake_python.stat().st_mode | stat.S_IXUSR)
+
+    result = subprocess.run(
+        ["bash", str(script)],
+        cwd=ROOT,
+        env={
+            "PATH": "/usr/bin:/bin",
+            "PYTHON_BIN": str(fake_python),
+            "LOCAL_PREFLIGHT_TARGETS": "",
+            "REMOTE_PREFLIGHT_TARGETS": "",
+            "BOOTSTRAP_TARGETS": "",
+            "SHARED_ROOT_MARKER_VALUE": "release-root-token",
+        },
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 1
+    assert "SHARED_ROOT_MARKER_VALUE requires SHARED_ROOT_MARKER" in result.stderr
+
+
 def test_release_env_check_script_uses_built_wheel_without_hardcoded_version(tmp_path):
     script = ROOT / "scripts" / "release_env_check.sh"
     fake_python = tmp_path / "python"
@@ -227,6 +288,16 @@ def test_release_runbook_documents_public_release_gates():
     assert "explicit confirmation" in text
     assert "Do not claim multi-machine real-media execution" in text
     assert "/Volumes/MediaOrchard" in text
+
+
+def test_release_docs_require_shared_root_marker_for_multi_machine_claims():
+    readme = (ROOT / "README.md").read_text()
+    runbook = (ROOT / "RELEASE.md").read_text()
+
+    combined = readme + "\n" + runbook
+    assert "SHARED_ROOT_MARKER" in combined
+    assert "--shared-root-marker" in combined
+    assert "same shared storage" in combined
 
 
 def test_release_checklist_current_evidence_uses_main_not_feature_branches():

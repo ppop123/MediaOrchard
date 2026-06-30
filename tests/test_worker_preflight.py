@@ -1,8 +1,10 @@
 import subprocess
 
 from mediaorchard.worker.preflight import (
+    PreflightCheck,
     WorkerPreflightConfig,
     build_command_argv,
+    resolve_marker_path,
     run_command,
     run_worker_preflight,
 )
@@ -83,6 +85,117 @@ def test_worker_preflight_reports_missing_requirements(tmp_path):
         "mlx_whisper",
         "shared_root",
     ]
+
+
+def test_worker_preflight_reports_shared_root_marker_mismatch(tmp_path):
+    expected_token = "mediaorchard-release-root"
+
+    def fake_runner(argv, _timeout):
+        script = argv[-1]
+        if "sys.version_info" in script:
+            return FakeCompletedProcess(stdout="3.14.3\n")
+        if "command -v ffmpeg" in script:
+            return FakeCompletedProcess(stdout="/opt/homebrew/bin/ffmpeg\n")
+        if "command -v ffprobe" in script:
+            return FakeCompletedProcess(stdout="/opt/homebrew/bin/ffprobe\n")
+        if "import mlx_whisper" in script:
+            return FakeCompletedProcess(stdout="0.4.3\n")
+        if "test -d" in script:
+            return FakeCompletedProcess(stdout=f"{tmp_path}\n")
+        if "cat" in script:
+            return FakeCompletedProcess(stdout="other-root\n")
+        raise AssertionError(f"unexpected script: {script}")
+
+    result = run_worker_preflight(
+        WorkerPreflightConfig(
+            target="local",
+            shared_root=tmp_path,
+            shared_root_marker=".mediaorchard-shared-root-id",
+            shared_root_marker_value=expected_token,
+        ),
+        command_runner=fake_runner,
+    )
+
+    assert result.ok is False
+    marker = result.checks[-1]
+    assert marker.name == "shared_root_marker"
+    assert marker.ok is False
+    assert expected_token in marker.detail
+    assert "other-root" in marker.detail
+
+
+def test_worker_preflight_passes_when_shared_root_marker_matches(tmp_path):
+    def fake_runner(argv, _timeout):
+        script = argv[-1]
+        if "sys.version_info" in script:
+            return FakeCompletedProcess(stdout="3.14.3\n")
+        if "command -v ffmpeg" in script:
+            return FakeCompletedProcess(stdout="/opt/homebrew/bin/ffmpeg\n")
+        if "command -v ffprobe" in script:
+            return FakeCompletedProcess(stdout="/opt/homebrew/bin/ffprobe\n")
+        if "import mlx_whisper" in script:
+            return FakeCompletedProcess(stdout="0.4.3\n")
+        if "test -d" in script:
+            return FakeCompletedProcess(stdout=f"{tmp_path}\n")
+        if "cat" in script:
+            return FakeCompletedProcess(stdout="release-root-token\n")
+        raise AssertionError(f"unexpected script: {script}")
+
+    result = run_worker_preflight(
+        WorkerPreflightConfig(
+            shared_root=tmp_path,
+            shared_root_marker=".mediaorchard-shared-root-id",
+            shared_root_marker_value="release-root-token",
+        ),
+        command_runner=fake_runner,
+    )
+
+    assert result.ok is True
+    assert result.checks[-1] == PreflightCheck(
+        "shared_root_marker",
+        True,
+        "release-root-token",
+    )
+
+
+def test_worker_preflight_reports_missing_shared_root_marker_file(tmp_path):
+    def fake_runner(argv, _timeout):
+        script = argv[-1]
+        if "sys.version_info" in script:
+            return FakeCompletedProcess(stdout="3.14.3\n")
+        if "command -v ffmpeg" in script:
+            return FakeCompletedProcess(stdout="/opt/homebrew/bin/ffmpeg\n")
+        if "command -v ffprobe" in script:
+            return FakeCompletedProcess(stdout="/opt/homebrew/bin/ffprobe\n")
+        if "import mlx_whisper" in script:
+            return FakeCompletedProcess(stdout="0.4.3\n")
+        if "test -d" in script:
+            return FakeCompletedProcess(stdout=f"{tmp_path}\n")
+        if "cat" in script:
+            return FakeCompletedProcess(returncode=1, stderr="No such file\n")
+        raise AssertionError(f"unexpected script: {script}")
+
+    result = run_worker_preflight(
+        WorkerPreflightConfig(
+            shared_root=tmp_path,
+            shared_root_marker=".mediaorchard-shared-root-id",
+            shared_root_marker_value="release-root-token",
+        ),
+        command_runner=fake_runner,
+    )
+
+    assert result.ok is False
+    assert result.checks[-1] == PreflightCheck(
+        "shared_root_marker",
+        False,
+        "No such file",
+    )
+
+
+def test_resolve_marker_path_keeps_absolute_marker_path(tmp_path):
+    marker = tmp_path / "marker-id"
+
+    assert resolve_marker_path(tmp_path / "root", marker) == marker
 
 
 def test_build_command_argv_wraps_remote_checks_with_ssh():

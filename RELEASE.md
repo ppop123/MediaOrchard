@@ -17,6 +17,11 @@ until the target Worker machines pass the release environment gate.
 Do not claim multi-machine real-media execution until every target has Python
 3.11+, `ffmpeg`, `ffprobe`, a working `mlx_whisper` import, a Worker virtual
 environment, and the same resolved shared root such as `/Volumes/MediaOrchard`.
+For the final multi-machine gate, place a marker file in that real shared root
+and set `SHARED_ROOT_MARKER` plus `SHARED_ROOT_MARKER_VALUE` so every target
+proves it can read the same shared storage, not merely a local directory with
+the same path. Generate the token from the shared root, for example with
+`uuidgen > /Volumes/MediaOrchard/.mediaorchard-shared-root-id`.
 
 ## Required Checks
 
@@ -32,12 +37,16 @@ This command runs the harness check, full test suite, CLI smoke, package build,
 Run the read-only multi-machine environment gate:
 
 ```bash
+export SHARED_ROOT_MARKER=.mediaorchard-shared-root-id
+export SHARED_ROOT_MARKER_VALUE='replace-with-token-from-the-shared-root-marker'
 bash scripts/release_env_check.sh
 ```
 
 This command does not execute remote bootstrap. It runs Worker preflight checks,
 builds or reuses a wheel, and prints the `mediaorchard doctor worker-bootstrap`
-dry-run with `--copy-wheel` for the configured SSH targets.
+dry-run with `--copy-wheel` for the configured SSH targets. When the marker
+environment variables are set, the preflight also verifies every target reads
+the expected marker token from the shared root.
 
 ## Worker Bootstrap
 

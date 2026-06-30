@@ -264,6 +264,55 @@ def test_doctor_worker_reports_preflight_failures(monkeypatch, tmp_path):
     assert "PASS shared_root" in result.output
 
 
+def test_doctor_worker_passes_shared_root_marker_to_preflight(monkeypatch, tmp_path):
+    def fake_preflight(config):
+        assert str(config.shared_root_marker) == ".mediaorchard-shared-root-id"
+        assert config.shared_root_marker_value == "release-root-token"
+        return WorkerPreflightResult(
+            target=config.target,
+            checks=[
+                PreflightCheck("python>=3.11", True, "3.14.3"),
+                PreflightCheck("shared_root", True, str(config.shared_root)),
+                PreflightCheck("shared_root_marker", True, "release-root-token"),
+            ],
+        )
+
+    monkeypatch.setattr(cli_main, "run_worker_preflight", fake_preflight)
+    result = CliRunner().invoke(
+        app,
+        [
+            "doctor",
+            "worker",
+            "--target",
+            "local",
+            "--shared-root",
+            str(tmp_path),
+            "--shared-root-marker",
+            ".mediaorchard-shared-root-id",
+            "--shared-root-marker-value",
+            "release-root-token",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "PASS shared_root_marker" in result.output
+
+
+def test_doctor_worker_rejects_marker_value_without_marker():
+    result = CliRunner().invoke(
+        app,
+        [
+            "doctor",
+            "worker",
+            "--shared-root-marker-value",
+            "release-root-token",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "--shared-root-marker-value requires --shared-root-marker" in result.output
+
+
 def test_doctor_worker_bootstrap_defaults_to_dry_run():
     result = CliRunner().invoke(
         app,

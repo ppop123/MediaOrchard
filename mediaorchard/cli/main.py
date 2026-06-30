@@ -227,17 +227,23 @@ def submit(
 def doctor_worker(
     targets: list[str] | None = typer.Option(None, "--target"),
     shared_root: Path = typer.Option(Path("/Volumes/MediaOrchard"), "--shared-root"),
+    shared_root_marker: Path | None = typer.Option(None, "--shared-root-marker"),
+    shared_root_marker_value: str | None = typer.Option(None, "--shared-root-marker-value"),
     runtime_python: str = typer.Option("python3", "--runtime-python"),
     whisper_python: str = typer.Option("python3", "--whisper-python"),
     timeout_seconds: int = typer.Option(10, "--timeout-seconds", min=1),
 ) -> None:
     """Check local or SSH Worker runtime requirements."""
+    if shared_root_marker_value is not None and shared_root_marker is None:
+        raise typer.BadParameter("--shared-root-marker-value requires --shared-root-marker")
     target_values = targets or ["local"]
     results = [
         run_worker_preflight(
             WorkerPreflightConfig(
                 target=target,
                 shared_root=shared_root,
+                shared_root_marker=shared_root_marker,
+                shared_root_marker_value=shared_root_marker_value,
                 runtime_python_executable=runtime_python,
                 whisper_python_executable=whisper_python,
                 timeout_seconds=timeout_seconds,
