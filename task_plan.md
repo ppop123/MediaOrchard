@@ -18,7 +18,7 @@ Release gates are tracked in `docs/RELEASE_CHECKLIST.md`.
 
 ## Current Focus
 
-- Phase 7 release hardening: package release checks are now in place; current focus is validating the repeatable Worker bootstrap path for per-target virtual environments, local wheel copying, shared root layout, and required media tools.
+- Phase 7 release hardening: package release checks are now in place; current focus is validating the repeatable Worker bootstrap path for shared-root fail-fast checks, per-target virtual environments, local wheel copying, and required media tools.
 
 ## Errors Encountered
 

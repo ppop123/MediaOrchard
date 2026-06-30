@@ -265,7 +265,7 @@ mediaorchard doctor worker-bootstrap \
   --execute
 ```
 
-Without `--copy-wheel`, copy the built wheel to the target path shown in the dry-run output before adding `--execute`. `--wheel` and a custom `--package-spec` are mutually exclusive. `--copy-wheel` requires `--wheel`. The bootstrap creates a per-user virtual environment, installs MediaOrchard and the whisper backend, creates the shared-root layout under an already usable shared root, and verifies `ffmpeg`, `ffprobe`, `mlx_whisper`, and `mediaorchard --help`.
+Without `--copy-wheel`, copy the built wheel to the target path shown in the dry-run output before adding `--execute`. `--wheel` and a custom `--package-spec` are mutually exclusive. `--copy-wheel` requires `--wheel`. The bootstrap checks the target Python, prepares the shared-root layout under an already usable shared root, then creates a per-user virtual environment, installs MediaOrchard and the whisper backend, and verifies `ffmpeg`, `ffprobe`, `mlx_whisper`, and `mediaorchard --help`. If the shared root is not mounted or writable, bootstrap fails before creating the Worker virtual environment.
 
 Single-machine real-media CLI demo:
 

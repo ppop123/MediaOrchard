@@ -36,6 +36,32 @@ def test_build_bootstrap_script_sets_up_venv_shared_root_and_checks_tools():
     assert "/Users/wangyan/.mediaorchard/venv/bin/mediaorchard --help >/dev/null" in script
 
 
+def test_build_bootstrap_script_prepares_shared_root_before_installing_worker():
+    script = build_bootstrap_script(
+        WorkerBootstrapConfig(
+            install_root=Path("/Users/wangyan/.mediaorchard"),
+            shared_root=Path("/Volumes/MediaOrchard"),
+            python_executable="/opt/homebrew/bin/python3.14",
+            package_wheel=Path("/tmp/dist/mediaorchard-0.1.0-py3-none-any.whl"),
+        )
+    )
+
+    shared_root_index = script.index(
+        "mkdir -p /Volumes/MediaOrchard/inbox /Volumes/MediaOrchard/work "
+        "/Volumes/MediaOrchard/output /Volumes/MediaOrchard/logs /Volumes/MediaOrchard/cache"
+    )
+    venv_index = script.index("/opt/homebrew/bin/python3.14 -m venv /Users/wangyan/.mediaorchard/venv")
+    pip_upgrade_index = script.index("/Users/wangyan/.mediaorchard/venv/bin/python -m pip install -U pip")
+    package_install_index = script.index(
+        "/Users/wangyan/.mediaorchard/venv/bin/python -m pip install "
+        "/Users/wangyan/.mediaorchard/packages/mediaorchard-0.1.0-py3-none-any.whl mlx-whisper"
+    )
+
+    assert shared_root_index < venv_index
+    assert shared_root_index < pip_upgrade_index
+    assert shared_root_index < package_install_index
+
+
 def test_build_bootstrap_script_can_install_from_local_wheel():
     script = build_bootstrap_script(
         WorkerBootstrapConfig(

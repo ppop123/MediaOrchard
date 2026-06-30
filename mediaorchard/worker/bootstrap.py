@@ -68,6 +68,7 @@ def build_bootstrap_script(config: WorkerBootstrapConfig) -> str:
             "import sys",
             "raise SystemExit(0 if sys.version_info >= (3, 11) else 1)",
             "PY_VERSION",
+            f"mkdir -p {shared_dirs}",
             f"mkdir -p {shlex.quote(str(install_root))}",
             f"{python} -m venv {shlex.quote(str(venv_dir))}",
             f"{venv_python} -m pip install -U pip",
@@ -83,7 +84,6 @@ def build_bootstrap_script(config: WorkerBootstrapConfig) -> str:
     lines.extend(
         [
             f"{venv_python} -m pip install {package_args}",
-            f"mkdir -p {shared_dirs}",
             "command -v ffmpeg >/dev/null",
             "command -v ffprobe >/dev/null",
             f"{venv_python} - <<'PY_WHISPER'",
