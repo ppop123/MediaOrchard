@@ -29,3 +29,4 @@
 - Added explicit `--copy-wheel` support for Worker bootstrap execution so the local release wheel can be copied to local or SSH targets before the setup script runs.
 - Verified read-only target facts for the current worker machines: both `192.168.50.8` and `192.168.50.9` have `/opt/homebrew/bin/python3.14` and Homebrew `ffmpeg`/`ffprobe`; both still lack `/Volumes/MediaOrchard`, and `/Volumes` is not writable by `wangyan`.
 - Verified `bash scripts/release_check.sh` after the `--copy-wheel` bootstrap changes and review hardening: harness check, 117 passing tests, CLI smoke, `sdist`/wheel build, `twine check`, clean wheel install smoke, and tracked-file hygiene guard all pass.
+- Ran read-only Worker preflight after merging `--copy-wheel`: local `.venv` still lacks `mlx_whisper`; both remotes still lack the per-user Worker venv; all targets still lack `/Volumes/MediaOrchard`.

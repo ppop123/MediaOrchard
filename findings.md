@@ -25,6 +25,7 @@
 - Worker bootstrap can now use explicit `--copy-wheel --execute` to create the target package directory and copy the local wheel before running the setup script; without `--copy-wheel`, the dry-run remains a manual copy plan.
 - Read-only probes found `192.168.50.8` has `/opt/homebrew/bin/python3.14` but not `python3.13`; `192.168.50.9` has both, so `/opt/homebrew/bin/python3.14` is the common bootstrap Python path for these two targets.
 - `/Volumes/MediaOrchard` is still missing on local and both target machines, and `/Volumes` is not writable by the `wangyan` user on the remotes; public multi-Mac claims need the shared root mounted or an agreed writable shared path before final Worker preflight can pass.
+- After `--copy-wheel` landed on `main`, read-only preflight with the intended Worker paths still fails because local `.venv` lacks `mlx_whisper`, the remote per-user Worker venvs have not been created yet, and the shared root is still absent on every target.
 
 ## Release Packaging Findings
 

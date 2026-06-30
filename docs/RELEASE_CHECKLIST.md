@@ -50,6 +50,7 @@ This project is not ready for public release until every required gate below has
 - Worker bootstrap supports `--wheel` dry-run plans so the same locally built release wheel can be copied to target Workers and installed from `/Users/wangyan/.mediaorchard/packages/` without requiring an already-published package index.
 - Worker bootstrap supports explicit `--copy-wheel --execute` mode, which creates the target package directory, copies the local release wheel with `cp` or `scp`, and stops before running the bootstrap script if the copy fails.
 - Read-only target probes on `192.168.50.8` and `192.168.50.9` found both machines have `/opt/homebrew/bin/python3.14` plus `ffmpeg`/`ffprobe`, but `/Volumes/MediaOrchard` is still missing and `/Volumes` is not writable by `wangyan`.
+- Post-copy-wheel read-only Worker preflight on `main` still fails for multi-machine execution: local `.venv/bin/python` lacks `mlx_whisper`, both remotes lack `/Users/wangyan/.mediaorchard/venv/bin/python`, and all targets still lack `/Volumes/MediaOrchard`.
 
 ## Current Release Status
 
