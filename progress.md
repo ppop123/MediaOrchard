@@ -46,3 +46,5 @@
 - Added optional shared-root marker validation to Worker preflight and `scripts/release_env_check.sh`, so final multi-machine release checks can prove targets read the same shared storage instead of merely having the same local path.
 - Verified `bash scripts/verify.sh` and `bash scripts/release_check.sh` on `main` after adding the shared-root marker gate: harness check, 135 passing tests, CLI smoke, `sdist`/wheel build, `twine check`, clean wheel install smoke, and tracked-file hygiene guard all pass.
 - Re-ran `bash scripts/release_env_check.sh` on `main`; it remains a read-only failing gate with exit code `1` until remote Worker venvs and `/Volumes/MediaOrchard` are prepared, while local `.venv/bin/python` still passes the `mlx_whisper` check.
+- Added `.github/workflows/release-check.yml` so public repository pushes and pull requests to `main` run the release gate on `macos-14` with Python 3.12.
+- Verified `bash scripts/release_check.sh` on `main` after adding the release-check workflow: harness check, 136 passing tests, CLI smoke, `sdist`/wheel build, `twine check`, clean wheel install smoke, and tracked-file hygiene guard all pass.

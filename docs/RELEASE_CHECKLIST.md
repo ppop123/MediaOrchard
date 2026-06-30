@@ -27,12 +27,13 @@ This project is not ready for public release until every required gate below has
 - [x] A read-only release environment check aggregates Worker preflight and bootstrap dry-run output before multi-machine release.
 - [x] `RELEASE.md` defines package, single-machine, and multi-machine release decision gates.
 - [x] Worker preflight can verify a shared-root marker token so multi-machine release checks can prove targets read the same shared storage.
+- [x] GitHub Actions release-check workflow runs the public release gate on push and pull request events for `main`.
 
 ## Current Evidence
 
-- `bash scripts/verify.sh`: harness check plus 135 tests pass on `main`.
+- `bash scripts/verify.sh`: harness check plus 136 tests pass on `main`.
 - `bash scripts/smoke.sh`: CLI help renders successfully.
-- `bash scripts/release_check.sh`: harness check, 135 tests, CLI smoke, `python -m build`, `twine check`, clean wheel install smoke, and tracked-file hygiene guard pass on `main`.
+- `bash scripts/release_check.sh`: harness check, 136 tests, CLI smoke, `python -m build`, `twine check`, clean wheel install smoke, and tracked-file hygiene guard pass on `main`.
 - `bash scripts/release_env_check.sh`: read-only preflight plus bootstrap dry-run runs on `main` and exits `1` because the multi-machine environment is still missing remote Worker venvs and `/Volumes/MediaOrchard`; local `.venv/bin/python` now imports `mlx_whisper` 0.4.3.
 - Process-level CLI E2E smoke passed on `main` from a temp shared root at `/tmp/mediaorchard-main-cli-e2e.GldT3h/output/job_027f3f57c6f2`: `controller start`, `submit`, `worker start --once`, `jobs`, and artifact checks for `subtitle.srt`, `transcript.txt`, `transcript.json`, and `quality_report.json`.
 - Process-level real-media CLI E2E smoke passed on `main` from `/tmp/mediaorchard-main-real-cli-e2e.B8Gvyp/output/job_825c8527e177`: generated an input mp4 with `say` and `ffmpeg`, then ran `controller start`, `submit`, `worker start --execution-mode real --once`, `jobs`, and artifact checks for `input_meta.json`, `audio.wav`, `subtitle.srt`, `transcript.txt`, `transcript.json`, `quality_report.json`, `report.md`, and passed quality status.
@@ -58,6 +59,7 @@ This project is not ready for public release until every required gate below has
 - `bash scripts/release_env_check.sh` is a read-only multi-machine release gate: it runs local and remote Worker preflight checks, builds or reuses a release wheel, and prints `worker-bootstrap --copy-wheel` dry-run output without passing `--execute`.
 - `RELEASE.md` documents the 0.1 release states, required gates, explicit confirmation requirement before remote `--execute`, and the rule not to claim multi-machine real-media execution until `bash scripts/release_env_check.sh` exits `0`.
 - Worker preflight supports optional shared-root marker validation via `--shared-root-marker` and `--shared-root-marker-value`; `scripts/release_env_check.sh` passes `SHARED_ROOT_MARKER` and `SHARED_ROOT_MARKER_VALUE` through to local and SSH preflight so the final multi-machine gate can verify the targets read the same shared storage.
+- `.github/workflows/release-check.yml` runs `PYTHON_FOR_VENV=.venv/bin/python bash scripts/release_check.sh` on `macos-14` with Python 3.12 for push and pull request events targeting `main`.
 - Read-only target probes on `192.168.50.8` and `192.168.50.9` found both machines have `/opt/homebrew/bin/python3.14` plus `ffmpeg`/`ffprobe`, but `/Volumes/MediaOrchard` is still missing and `/Volumes` is not writable by `wangyan`.
 - Post-local-venv read-only Worker preflight on `main` still fails for multi-machine execution: local `.venv/bin/python` imports `mlx_whisper` 0.4.3, both remotes lack `/Users/wangyan/.mediaorchard/venv/bin/python`, and all targets still lack `/Volumes/MediaOrchard`.
 
