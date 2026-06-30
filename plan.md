@@ -106,9 +106,8 @@ Rules plan and schedule first. Agent-shaped records are persisted now. LLM decis
 ```bash
 mediaorchard controller start
 MEDIAORCHARD_API_KEY=<shared-secret> mediaorchard worker start --node-id mac-studio
-mediaorchard submit /Volumes/MediaOrchard/inbox/demo.mp4 --goal video_to_subtitle --language zh --outputs srt txt json
-mediaorchard jobs
-mediaorchard job <job_id>
+MEDIAORCHARD_API_KEY=<shared-secret> mediaorchard submit /Volumes/MediaOrchard/inbox/demo.mp4 --goal video_to_subtitle --language zh --output srt --output txt --output json
+MEDIAORCHARD_API_KEY=<shared-secret> mediaorchard jobs
 ```
 
 Expected output directory:
@@ -902,7 +901,7 @@ Create: tests/test_policy.py
 
 ### Milestone 2: Database Models And State Machine
 
-**Status:** implemented for core models and state transitions; broad persistence coverage is still a release gate.
+**Status:** implemented for core models, state transitions, and broad persistence coverage.
 
 **Files:**
 
@@ -928,7 +927,7 @@ README must state which mode the current build uses.
 
 ### Milestone 3: Controller API
 
-**Status:** implemented for node registration, heartbeat, job create/list/get, assigned Step claim, and Step lifecycle updates. Job cancellation/retry and richer read APIs are still pending.
+**Status:** implemented for node registration, heartbeat, job create/list/get, automatic deterministic Plan/Step creation, heartbeat-triggered queued Step assignment, assigned Step claim, and Step lifecycle updates. Job cancellation/retry and richer read APIs are still pending.
 
 **Files:**
 
@@ -946,7 +945,7 @@ Create: tests/test_api.py
 
 ### Milestone 4: Planner And Scheduler
 
-**Status:** scheduler policies, scoring, and assignment helper are implemented. Planner and persistent scheduling decision records are still pending.
+**Status:** scheduler policies, scoring, assignment helper, and heartbeat-triggered assignment are implemented. General planner abstractions and persistent scheduling decision records are still pending.
 
 **Files:**
 
@@ -964,7 +963,7 @@ Create: tests/test_scheduler.py
 
 ### Milestone 5: Worker Runtime And Tools
 
-**Status:** WorkerAgent registration, heartbeat, assigned-step claim, shutdown interruption reporting, structured command execution, and mock media pipeline artifacts are implemented. Process management, live metrics collection, and real ffmpeg/whisper smoke coverage are still pending.
+**Status:** WorkerAgent registration, heartbeat, assigned-step claim, start/complete/fail reporting, shutdown interruption reporting, live metrics collection, structured command execution, deterministic pipeline artifacts, and local real-media smoke coverage are implemented. Worker-orchestrated real `ffmpeg`/`mlx_whisper` multi-step execution is still a hardening item.
 
 **Files:**
 
@@ -990,7 +989,7 @@ Create: tests/test_worker_lifecycle.py
 
 ### Milestone 6: CLI End-To-End Demo
 
-**Status:** CLI shell and help commands exist. End-to-end submit/run/status commands are still pending.
+**Status:** `controller start`, `worker start`, `submit`, `jobs`, and `nodes` are implemented. A process-level single-machine CLI E2E smoke can submit a `video_to_subtitle` job, run one Worker poll, complete the deterministic pipeline, list completed job state, and verify release-shaped artifacts. `job`, `cancel`, `retry`, and JSON output modes remain post-demo hardening.
 
 **Files:**
 
@@ -1014,7 +1013,7 @@ Errors: one-line human message by default, structured JSON error with --json.
 
 ### Milestone 7: Recovery And Reports
 
-**Status:** state-machine recovery helpers exist. Runtime recovery loop, final reports, and quality artifacts are still pending.
+**Status:** state-machine recovery helpers exist, and deterministic/real-smoke report artifacts are implemented. Runtime recovery loop, retry orchestration, and first-class report APIs are still pending.
 
 **Files:**
 
@@ -1071,8 +1070,9 @@ Manual demo verification after MVP:
 ```bash
 mediaorchard controller start
 MEDIAORCHARD_API_KEY=<shared-secret> mediaorchard worker start --node-id local-dev
-mediaorchard submit /Volumes/MediaOrchard/inbox/demo.mp4 --goal video_to_subtitle --language zh --outputs srt txt json
-mediaorchard job <job_id>
+MEDIAORCHARD_API_KEY=<shared-secret> mediaorchard submit /Volumes/MediaOrchard/inbox/demo.mp4 --goal video_to_subtitle --language zh --output srt --output txt --output json
+MEDIAORCHARD_API_KEY=<shared-secret> mediaorchard jobs
+MEDIAORCHARD_API_KEY=<shared-secret> mediaorchard nodes
 ```
 
 Success criteria:

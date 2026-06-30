@@ -60,11 +60,45 @@ class WorkerAgent:
     def claim_next(self) -> dict[str, Any] | None:
         return self.transport.post("/steps/claim-next", {"node_id": self.node_id})
 
-    def report_interrupted(self, *, step_id: str, assignment_epoch: int) -> dict[str, Any] | None:
+    def start_step(self, *, step_id: str, assignment_epoch: int) -> dict[str, Any] | None:
+        return self.transport.post(
+            f"/steps/{step_id}/start",
+            {"assignment_epoch": assignment_epoch},
+        )
+
+    def complete_step(
+        self,
+        *,
+        step_id: str,
+        assignment_epoch: int,
+        output_json: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        return self.transport.post(
+            f"/steps/{step_id}/complete",
+            {
+                "assignment_epoch": assignment_epoch,
+                "output_json": output_json,
+            },
+        )
+
+    def fail_step(
+        self,
+        *,
+        step_id: str,
+        assignment_epoch: int,
+        error_message: str,
+    ) -> dict[str, Any] | None:
         return self.transport.post(
             f"/steps/{step_id}/fail",
             {
                 "assignment_epoch": assignment_epoch,
-                "error_message": "interrupted_by_worker_shutdown",
+                "error_message": error_message,
             },
+        )
+
+    def report_interrupted(self, *, step_id: str, assignment_epoch: int) -> dict[str, Any] | None:
+        return self.fail_step(
+            step_id=step_id,
+            assignment_epoch=assignment_epoch,
+            error_message="interrupted_by_worker_shutdown",
         )

@@ -3,9 +3,11 @@ from pathlib import Path
 from starlette.testclient import TestClient
 
 from mediaorchard.controller.main import create_app
-from mediaorchard.controller.db.models import Step
+from sqlmodel import select
+
+from mediaorchard.controller.db.models import Plan, Step
 from mediaorchard.shared.security import hash_api_key
-from mediaorchard.shared.enums import StepStatus
+from mediaorchard.shared.enums import JobStatus, StepStatus
 
 
 def worker_headers(node_id: str = "mac-studio") -> dict[str, str]:
@@ -135,7 +137,100 @@ def test_create_and_get_job_with_auth(tmp_path):
     assert created.status_code == 201
     assert fetched.status_code == 200
     assert fetched.json()["goal_type"] == "video_to_subtitle"
-    assert fetched.json()["status"] == "created"
+    assert fetched.json()["status"] == "queued"
+
+
+def test_create_job_builds_initial_plan_and_pipeline_step(tmp_path):
+    client, shared_root = make_client(tmp_path)
+    input_file = shared_root / "inbox" / "demo.mp4"
+    input_file.parent.mkdir()
+    input_file.write_text("placeholder")
+    headers = {"Authorization": "Bearer secret"}
+
+    created = client.post(
+        "/jobs",
+        headers=headers,
+        json={
+            "goal_type": "video_to_subtitle",
+            "input_file": str(input_file),
+            "outputs": ["srt", "txt", "json"],
+            "language": "zh",
+            "quality": "high",
+            "priority": 5,
+        },
+    )
+
+    assert created.status_code == 201
+    app = client.app
+    with app.state.session_factory() as session:
+        job_id = created.json()["id"]
+        plans = list(session.exec(select(Plan).where(Plan.job_id == job_id)).all())
+        steps = list(session.exec(select(Step).where(Step.job_id == job_id)).all())
+
+    assert len(plans) == 1
+    assert len(steps) == 1
+    assert created.json()["plan_id"] == plans[0].id
+    assert steps[0].status == StepStatus.QUEUED
+    assert steps[0].tool_name == "video_to_subtitle_pipeline"
+    assert steps[0].input_json["input_file"] == str(input_file.resolve())
+    assert steps[0].input_json["requested_outputs"] == ["srt", "txt", "json"]
+
+
+def test_worker_heartbeat_assigns_queued_pipeline_step(tmp_path):
+    client, shared_root = make_client(tmp_path)
+    input_file = shared_root / "inbox" / "demo.mp4"
+    input_file.parent.mkdir()
+    input_file.write_text("placeholder")
+    headers = {"Authorization": "Bearer secret"}
+    client.post(
+        "/jobs",
+        headers=headers,
+        json={
+            "goal_type": "video_to_subtitle",
+            "input_file": str(input_file),
+            "outputs": ["srt"],
+            "language": "zh",
+            "quality": "standard",
+            "priority": 5,
+        },
+    )
+    client.post(
+        "/nodes/register",
+        headers=headers,
+        json={
+            "node_id": "mac-studio",
+            "name": "Mac Studio",
+            "shared_root": str(shared_root),
+            "max_ffmpeg_jobs": 2,
+            "max_whisper_jobs": 1,
+        },
+    )
+
+    heartbeat = client.post(
+        "/nodes/mac-studio/heartbeat",
+        headers=headers,
+        json={
+            "cpu_percent": 12.5,
+            "memory_percent": 40.0,
+            "free_disk_gb": 512.0,
+            "active_jobs": 0,
+            "active_ffmpeg_jobs": 0,
+            "active_whisper_jobs": 0,
+            "thermal_state": "normal",
+            "on_battery": False,
+        },
+    )
+    claimed = client.post("/steps/claim-next", headers=worker_headers(), json={"node_id": "mac-studio"})
+
+    assert heartbeat.status_code == 200
+    assert claimed.status_code == 200
+    assert claimed.json()["status"] == "assigned"
+    app = client.app
+    with app.state.session_factory() as session:
+        step = session.get(Step, claimed.json()["id"])
+        assert step is not None
+        assert step.assigned_node_id == "mac-studio"
+        assert step.assignment_epoch == 1
 
 
 def test_job_list_requires_auth(tmp_path):

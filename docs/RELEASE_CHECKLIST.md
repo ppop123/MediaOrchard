@@ -11,6 +11,7 @@ This project is not ready for public release until every required gate below has
 - [x] Worker lifecycle tests cover registration, heartbeat, assigned-step claim lease, node ownership checks, graceful shutdown, and stale completion rejection.
 - [x] Tool execution uses structured `list[str]` argv with `shell=False`.
 - [x] Mock `video_to_subtitle` pipeline completes without real media tools.
+- [x] CLI can start a Controller, submit a job, run one Worker poll, complete the deterministic pipeline, and list completed job/node state.
 - [x] Local real-media smoke test produces `srt`, `txt`, `json`, `quality_report.json`, `report.md`, and logs.
 - [x] README documents setup, config, API key hashing, demo commands, and troubleshooting.
 - [x] `bash scripts/verify.sh` and `bash scripts/smoke.sh` pass from a clean checkout.
@@ -18,8 +19,9 @@ This project is not ready for public release until every required gate below has
 
 ## Current Evidence
 
-- `bash scripts/verify.sh`: harness check plus 75 tests pass on `feature/real-media-smoke`.
+- `bash scripts/verify.sh`: harness check plus 92 tests pass on `feature/cli-orchestration`.
 - `bash scripts/smoke.sh`: CLI help renders successfully.
+- Process-level CLI E2E smoke passed from a temp shared root at `/tmp/mediaorchard-cli-e2e.wIxfoP/output/job_a7525c040a92`: `controller start`, `submit`, `worker start --once`, `jobs`, and artifact checks for `subtitle.srt`, `transcript.txt`, `transcript.json`, and `quality_report.json`.
 - Git repository initialized on `main`.
 - Controller API and state machine tests are merged into `main`.
 - Scheduler hard filters, scoring, assignment helper, active-count updates, and defensive scheduling checks are merged into `main`.
@@ -27,11 +29,12 @@ This project is not ready for public release until every required gate below has
 - Worker tool execution enforces registered command tools, existing input validation, structured `list[str]` argv, `shell=False`, subprocess timeout, timeout log capture, stdout/stderr log capture, log-write failure reporting, and failed exit-code reporting on `feature/tool-execution`.
 - Mock `video_to_subtitle` pipeline produces `audio.wav`, `transcript.txt`, `transcript.json`, `subtitle.srt`, `quality_report.json`, `report.md`, and per-step logs without real media tools on `feature/tool-execution`.
 - Database persistence tests verify all release models can be created, committed, and read back across sessions, including UTC datetime round-trips, on `feature/persistence-coverage`.
-- README documents setup, configuration, API key hashing, Controller API startup, mock demo commands, verification commands, and troubleshooting on `feature/docs-readme-release`.
+- README documents setup, configuration, API key hashing, Controller CLI startup, single-machine CLI demo commands, verification commands, and troubleshooting on `feature/cli-orchestration`.
 - Clean checkout verification passed from `/tmp/mediaorchard-clean-check.MlyHUq` after fresh clone, new venv, editable install, `bash scripts/verify.sh`, and `bash scripts/smoke.sh`.
 - Git tracked-file hygiene audit found no tracked local DB files, env/config-local files, media files, cache/work/output/log directories, pyc files, or actual API key/hash patterns; placeholder `<shared-secret>` references remain documented in `plan.md`.
 - Local real-media smoke passed at `/tmp/mediaorchard-real-smoke.4Jc4aF/output/real_smoke` using macOS `say`, `ffmpeg` 7.1.1, `ffprobe` 7.1.1, system Python `mlx-whisper` 0.4.3, and model `mlx-community/whisper-tiny`; produced `subtitle.srt`, `transcript.txt`, `transcript.json`, `quality_report.json`, `report.md`, `audio.wav`, `input_meta.json`, and logs.
+- Target Worker probes on `192.168.50.8` and `192.168.50.9` passed SSH reachability but found Python 3.9.6, no `mlx_whisper` import, no `/Volumes/MediaOrchard`, and no `ffmpeg`/`ffprobe` on PATH.
 
 ## Current Release Status
 
-Not releasable yet. Release evidence gates are now covered, including one local synthetic real-media smoke run on the developer Mac. The remaining product gap before a polished public 0.1 is full Controller/Worker CLI process orchestration, which is currently documented as a pre-release limitation in `README.md`.
+Single-Mac release candidate for the deterministic pipeline demo. The code now has current evidence for Controller/Worker CLI orchestration, durable state, scheduling, and local artifact generation. Do not promise multi-Mac real-media execution publicly until the target Workers have Python 3.11+, `ffmpeg`, `ffprobe`, a working whisper backend, and the shared root mounted at the same resolved path.

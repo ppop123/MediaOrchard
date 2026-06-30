@@ -10,14 +10,16 @@ from pydantic import BaseModel, Field
 from sqlalchemy import update
 from sqlmodel import Session, select
 
-from mediaorchard.controller.db.models import Job, Node, Step, utcnow
+from mediaorchard.controller.db.models import Job, Node, Plan, Step, utcnow
 from mediaorchard.controller.db.session import create_db_engine, init_db
 from mediaorchard.controller.runtime.state_machine import (
     TransitionError,
     transition_step,
     validate_assignment_epoch,
 )
-from mediaorchard.shared.enums import NodeStatus, StepStatus
+from mediaorchard.controller.scheduler.loop import SchedulerError, assign_best_node
+from mediaorchard.controller.scheduler.policies import SchedulerConfig
+from mediaorchard.shared.enums import JobStatus, NodeStatus, StepStatus
 from mediaorchard.shared.paths import (
     PathSecurityError,
     build_job_output_dir,
@@ -114,6 +116,76 @@ def create_app(
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="missing worker node id")
         return x_mediaorchard_node_id
 
+    def schedule_queued_steps(session: Session, now: datetime) -> None:
+        # Caller owns the surrounding transaction so heartbeat metrics and assignments commit together.
+        queued_steps = list(
+            session.exec(
+                select(Step)
+                .where(Step.status == StepStatus.QUEUED)
+                .order_by(Step.id)
+            ).all()
+        )
+        if not queued_steps:
+            return
+
+        nodes = list(session.exec(select(Node)).all())
+        scheduler_config = SchedulerConfig(shared_root=str(app.state.shared_root))
+        for step in queued_steps:
+            try:
+                decision = assign_best_node(step, nodes, scheduler_config, now=now)
+            except SchedulerError:
+                continue
+            if decision.selected_node is not None:
+                session.add(step)
+                session.add(decision.selected_node)
+
+    def mark_job_running(session: Session, job_id: str) -> None:
+        job = session.get(Job, job_id)
+        if job is None:
+            return
+        if job.status in {JobStatus.CREATED, JobStatus.QUEUED}:
+            job.status = JobStatus.RUNNING
+            job.progress = max(job.progress, 1.0)
+            job.updated_at = utcnow()
+            session.add(job)
+            session.commit()
+
+    def mark_job_after_step_completion(session: Session, job_id: str) -> None:
+        job = session.get(Job, job_id)
+        if job is None:
+            return
+        steps = list(session.exec(select(Step).where(Step.job_id == job_id)).all())
+        if not steps:
+            job.status = JobStatus.FAILED
+            job.error_message = "job has no steps"
+            job.completed_at = utcnow()
+            job.updated_at = utcnow()
+            session.add(job)
+            session.commit()
+            return
+
+        completed_count = sum(1 for step in steps if step.status == StepStatus.COMPLETED)
+        job.progress = round((completed_count / len(steps)) * 100, 2)
+        if completed_count == len(steps):
+            job.status = JobStatus.COMPLETED
+            job.completed_at = utcnow()
+        else:
+            job.status = JobStatus.RUNNING
+        job.updated_at = utcnow()
+        session.add(job)
+        session.commit()
+
+    def mark_job_failed(session: Session, job_id: str, error_message: str) -> None:
+        job = session.get(Job, job_id)
+        if job is None:
+            return
+        job.status = JobStatus.FAILED
+        job.error_message = error_message
+        job.completed_at = utcnow()
+        job.updated_at = utcnow()
+        session.add(job)
+        session.commit()
+
     @app.get("/nodes")
     def list_nodes(
         _: None = Depends(require_worker_auth),
@@ -181,9 +253,11 @@ def create_app(
         node.active_whisper_jobs = body.active_whisper_jobs
         node.thermal_state = body.thermal_state
         node.on_battery = body.on_battery
-        node.last_heartbeat_at = datetime.now(UTC)
+        now = datetime.now(UTC)
+        node.last_heartbeat_at = now
         node.updated_at = utcnow()
         session.add(node)
+        schedule_queued_steps(session, now)
         session.commit()
         session.refresh(node)
         return node
@@ -195,6 +269,11 @@ def create_app(
         _: None = Depends(require_worker_auth),
         session: Session = Depends(get_session),
     ) -> Job:
+        if body.goal_type != "video_to_subtitle":
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="unsupported goal_type for MVP",
+            )
         try:
             input_file = resolve_allowlisted_path(body.input_file, [request.app.state.shared_root])
         except PathSecurityError as exc:
@@ -204,6 +283,7 @@ def create_app(
             goal_type=body.goal_type,
             input_file=str(input_file),
             output_dir="",
+            status=JobStatus.QUEUED,
             priority=body.priority,
             language=body.language,
             quality=body.quality,
@@ -211,7 +291,34 @@ def create_app(
             user_request=body.user_request,
         )
         job.output_dir = str(build_job_output_dir(request.app.state.shared_root / "output", job.id))
+        plan = Plan(
+            job_id=job.id,
+            status="queued",
+            plan_json={
+                "version": "1",
+                "goal_type": body.goal_type,
+                "steps": ["video_to_subtitle_pipeline"],
+            },
+        )
+        job.plan_id = plan.id
+        step = Step(
+            job_id=job.id,
+            plan_id=plan.id,
+            step_type="video_to_subtitle",
+            tool_name="video_to_subtitle_pipeline",
+            status=StepStatus.QUEUED,
+            input_json={
+                "input_file": str(input_file),
+                "output_dir": job.output_dir,
+                "work_dir": str(request.app.state.shared_root / "work" / job.id),
+                "requested_outputs": body.outputs,
+                "language": body.language,
+                "quality": body.quality,
+            },
+        )
         session.add(job)
+        session.add(plan)
+        session.add(step)
         session.commit()
         session.refresh(job)
         return job
@@ -341,13 +448,15 @@ def create_app(
         validate_worker_ownership(step, worker_node_id)
         validate_epoch_or_409(step, body.assignment_epoch)
         next_status = transition_or_409(step, StepStatus.RUNNING)
-        return persist_step_update_or_409(
+        updated = persist_step_update_or_409(
             session,
             step,
             worker_node_id=worker_node_id,
             from_statuses={StepStatus.ASSIGNED},
             values={"status": next_status, "started_at": datetime.now(UTC)},
         )
+        mark_job_running(session, updated.job_id)
+        return updated
 
     @app.post("/steps/{step_id}/progress")
     def progress_step(
@@ -382,7 +491,7 @@ def create_app(
         validate_worker_ownership(step, worker_node_id)
         validate_epoch_or_409(step, body.assignment_epoch)
         next_status = transition_or_409(step, StepStatus.COMPLETED)
-        return persist_step_update_or_409(
+        updated = persist_step_update_or_409(
             session,
             step,
             worker_node_id=worker_node_id,
@@ -393,6 +502,8 @@ def create_app(
                 "completed_at": datetime.now(UTC),
             },
         )
+        mark_job_after_step_completion(session, updated.job_id)
+        return updated
 
     @app.post("/steps/{step_id}/fail")
     def fail_step(
@@ -406,7 +517,7 @@ def create_app(
         validate_worker_ownership(step, worker_node_id)
         validate_epoch_or_409(step, body.assignment_epoch)
         next_status = transition_or_409(step, StepStatus.FAILED)
-        return persist_step_update_or_409(
+        updated = persist_step_update_or_409(
             session,
             step,
             worker_node_id=worker_node_id,
@@ -417,6 +528,8 @@ def create_app(
                 "completed_at": datetime.now(UTC),
             },
         )
+        mark_job_failed(session, updated.job_id, body.error_message)
+        return updated
 
     @app.post("/steps/{step_id}/claim")
     def claim_step(

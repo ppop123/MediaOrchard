@@ -12,14 +12,17 @@ Implemented foundations:
 
 - FastAPI Controller app with authenticated node/job/step lifecycle endpoints.
 - SQLite/SQLModel persistence for release domain models.
-- Scheduler hard filters and scoring helpers.
-- WorkerAgent registration, heartbeat, assigned-step claim, and interruption reporting.
+- Scheduler hard filters, scoring helpers, and heartbeat-triggered assignment for queued Steps.
+- WorkerAgent registration, heartbeat, assigned-step claim, step start/complete/fail reporting, and interruption reporting.
+- Typer CLI for starting the Controller, starting a Worker, submitting jobs, and listing jobs/nodes.
 - Structured Worker command execution with `list[str]` argv, `shell=False`, timeout handling, and stdout/stderr logs.
-- Mock `video_to_subtitle` pipeline that produces release-shaped artifacts without real media tools.
+- Deterministic `video_to_subtitle` pipeline demo that produces release-shaped artifacts without real media tools.
+- Local real-media smoke path that verifies `say`, `ffmpeg`, `ffprobe`, and `mlx_whisper` can produce transcript and subtitle artifacts.
 
-Still pending before a public 0.1 release:
+Known MVP boundaries:
 
-- Production Worker process loop and full CLI orchestration.
+- The CLI end-to-end Worker path currently runs the deterministic pipeline demo. Worker-orchestrated real `ffmpeg`/`mlx_whisper` multi-step execution is still hardening; use `scripts/real_media_smoke.py` to verify the real media toolchain on a Mac.
+- Multi-Mac real-media execution requires each target Worker to have Python 3.11+, `ffmpeg`, `ffprobe`, the whisper backend, and the same resolved shared root mounted.
 
 ## Requirements
 
@@ -101,13 +104,13 @@ Never commit raw API keys, real `config.local.yaml`, source media, generated out
 
 ## Controller API
 
-The CLI `controller start` command is currently a shell placeholder. Run the Controller app with `uvicorn` for API-level testing:
+Start the Controller with the CLI:
 
 ```bash
 export MEDIAORCHARD_API_KEY_HASH='sha256:replace-with-generated-hash'
 export MEDIAORCHARD_SHARED_ROOT='/Volumes/MediaOrchard'
 export MEDIAORCHARD_DATABASE_URL='sqlite:///mediaorchard.db'
-.venv/bin/uvicorn mediaorchard.controller.main:app --host 0.0.0.0 --port 8765
+mediaorchard controller start --host 0.0.0.0 --port 8765
 ```
 
 Worker-facing requests require one of:
@@ -125,44 +128,62 @@ X-MediaOrchard-Node-Id: <node_id>
 
 ## Demo Commands
 
-Current CLI smoke commands:
+CLI help smoke:
 
 ```bash
 mediaorchard --help
 mediaorchard controller start --help
 mediaorchard worker start --node-id mac-studio --help
+mediaorchard submit --help
 mediaorchard jobs --help
 mediaorchard nodes --help
 ```
 
-Mock `video_to_subtitle` demo without real media tools:
+Single-machine CLI demo without real media tools:
 
 ```bash
-mkdir -p /tmp/mediaorchard-demo/inbox
-printf 'mock video placeholder\n' > /tmp/mediaorchard-demo/inbox/demo.mp4
+demo_root="$(mktemp -d /tmp/mediaorchard-demo.XXXXXX)"
+mkdir -p "$demo_root"/{inbox,work,output,logs,cache}
+printf 'mock video placeholder\n' > "$demo_root/inbox/demo.mp4"
+echo "demo_root=$demo_root"
 
-.venv/bin/python - <<'PY'
-from pathlib import Path
-from mediaorchard.worker.mock_pipeline import run_mock_video_to_subtitle_pipeline
+export MEDIAORCHARD_API_KEY='replace-me'
+export MEDIAORCHARD_API_KEY_HASH="$(
+  .venv/bin/python -c 'from mediaorchard.shared.security import hash_api_key; print(hash_api_key("replace-me"))'
+)"
+export MEDIAORCHARD_SHARED_ROOT="$demo_root"
+export MEDIAORCHARD_DATABASE_URL="sqlite:///$demo_root/controller.db"
 
-root = Path("/tmp/mediaorchard-demo")
-result = run_mock_video_to_subtitle_pipeline(
-    input_file=root / "inbox" / "demo.mp4",
-    output_dir=root / "output" / "job_demo",
-    work_dir=root / "work" / "job_demo",
-    requested_outputs=["srt", "txt", "json"],
-    language="zh",
-    job_id="job_demo",
-)
-print(result.status)
-print(result.output_dir)
-PY
+mediaorchard controller start --host 127.0.0.1 --port 8765
 ```
 
-Expected mock output files:
+In a second terminal, set `demo_root` to the printed path from the first terminal:
+
+```bash
+demo_root=/tmp/mediaorchard-demo.XXXXXX
+export MEDIAORCHARD_API_KEY='replace-me'
+mediaorchard submit "$demo_root/inbox/demo.mp4" \
+  --controller-url http://127.0.0.1:8765 \
+  --goal video_to_subtitle \
+  --output srt \
+  --output txt \
+  --output json \
+  --language zh
+
+mediaorchard worker start \
+  --node-id local-demo \
+  --controller-url http://127.0.0.1:8765 \
+  --shared-root "$demo_root" \
+  --once
+
+mediaorchard jobs --controller-url http://127.0.0.1:8765
+mediaorchard nodes --controller-url http://127.0.0.1:8765
+```
+
+Expected demo output files:
 
 ```text
-/tmp/mediaorchard-demo/output/job_demo/
+$demo_root/output/<job_id>/
   input_meta.json
   audio.wav
   transcript.txt
@@ -233,7 +254,7 @@ Move input files under the configured shared root, usually `/Volumes/MediaOrchar
 
 Worker claim returns `204 No Content`
 
-The Worker can only claim Steps already assigned to its own `node_id`. Scheduler assignment must happen before `claim-next`.
+The Worker can only claim Steps already assigned to its own `node_id`. A successful heartbeat triggers scheduling for queued Steps, so confirm the Worker registered, heartbeated, and reported a matching shared root with enough free disk.
 
 Tool execution returns `unknown tool`
 
@@ -243,6 +264,6 @@ Tool execution times out or exits nonzero
 
 Check the Step stdout/stderr log paths in the `ToolExecutionResult`. Timeout output is captured and the Step should not be treated as completed.
 
-CLI command says "not implemented yet"
+Job stays `queued`
 
-The CLI command shape is present, but full Controller/Worker process orchestration is still a pre-release gate. Use `uvicorn` for Controller API testing and the mock pipeline command for artifact testing.
+Run `mediaorchard nodes` and confirm at least one Worker is `online`, has a fresh heartbeat, has the same shared root, and is below the configured CPU, memory, disk, thermal, and battery limits.

@@ -2,20 +2,21 @@
 
 ## Layers
 
-- `mediaorchard/cli/`: Typer command surface for local development and operator workflows.
+- `mediaorchard/cli/`: Typer command surface for local development and operator workflows, including Controller/Worker start, job submit, and jobs/nodes inspection.
 - `mediaorchard/shared/`: shared safety primitives, currently API key hashing, secret redaction, path allowlisting, and shared-root validation.
-- `mediaorchard/controller/`: planned Controller API, scheduler, database, recovery, and reporting runtime.
-- `mediaorchard/worker/`: planned Worker heartbeat, process management, and structured tool execution.
+- `mediaorchard/controller/`: Controller API, SQLite/SQLModel persistence, state machine, scheduler policies, and heartbeat-triggered assignment.
+- `mediaorchard/worker/`: Worker lifecycle client, structured tool execution, deterministic pipeline demo, and real-media smoke helpers.
 - `tests/`: executable behavior contract for the currently implemented MVP slice.
 
 ## Runtime Loops
 
-Current implementation only covers Milestone 0/1 foundations. The planned runtime loops are documented in `plan.md`:
+The current single-machine runtime loop is:
 
-1. Controller scheduler moves `queued -> assigned` after resource and policy checks.
-2. Worker `claim-next` only accepts work already assigned to its `node_id`.
-3. Workers execute known tools with structured argv and publish cross-step artifacts to shared work storage.
-4. Controller recovery fences late completions with `assignment_epoch`.
+1. `POST /jobs` validates the input path, creates a Job, deterministic Plan, and queued `video_to_subtitle_pipeline` Step.
+2. Worker heartbeat updates node resource metrics and lets the scheduler move eligible queued Steps to `assigned`.
+3. Worker `claim-next` only accepts work already assigned to its `node_id` and receives an `assignment_epoch` fence.
+4. Worker starts the Step, executes the deterministic pipeline demo, writes artifacts under shared output/work storage, and reports complete or failed.
+5. Controller updates Step and Job status while rejecting stale lifecycle reports with `assignment_epoch`.
 
 Until separate operator/user auth exists, all Controller API endpoints require the shared API key. This is intentionally conservative for the local MVP and can be split into user and Worker auth later.
 
@@ -24,3 +25,4 @@ Until separate operator/user auth exists, all Controller API endpoints require t
 - `bash scripts/verify.sh`: harness check plus unit tests.
 - `bash scripts/smoke.sh`: CLI import/help smoke test.
 - `.venv/bin/python -m pytest`: direct test invocation.
+- Process-level CLI E2E smoke: Controller subprocess, CLI submit, Worker `--once`, completed job listing, and artifact checks.
