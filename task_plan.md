@@ -18,7 +18,7 @@ Release gates are tracked in `docs/RELEASE_CHECKLIST.md`.
 
 ## Current Focus
 
-- Phase 7 release hardening: explicit license, package build verification, release metadata checks, and documented release command.
+- Phase 7 release hardening: package release checks are now in place; next focus is a repeatable Worker bootstrap path for per-target virtual environments, shared root layout, and required media tools.
 
 ## Errors Encountered
 
