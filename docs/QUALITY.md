@@ -20,6 +20,8 @@
 - Mock `video_to_subtitle` pipeline completes without real media tools and produces transcript, subtitle, quality report, human report, and per-step logs.
 - Database persistence coverage verifies Node, Job, Plan, Step, ToolCall, AgentDecision, and QualityReport records across sessions, including UTC datetime round-trips.
 - README covers setup, configuration, API key hashing, Controller API startup, mock demo commands, verification, and troubleshooting.
+- Clean-checkout verification passes after fresh clone, new virtualenv, editable install, `bash scripts/verify.sh`, and `bash scripts/smoke.sh`.
+- Tracked-file hygiene audit found no local databases, env/config-local files, source media, generated media outputs, cache/work/output/log directories, pyc files, or actual API key/hash patterns.
 
 ## Partial Surfaces
 

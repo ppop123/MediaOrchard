@@ -13,8 +13,8 @@ This project is not ready for public release until every required gate below has
 - [x] Mock `video_to_subtitle` pipeline completes without real media tools.
 - [ ] Local real-media smoke test produces `srt`, `txt`, `json`, `quality_report.json`, `report.md`, and logs.
 - [x] README documents setup, config, API key hashing, demo commands, and troubleshooting.
-- [ ] `bash scripts/verify.sh` and `bash scripts/smoke.sh` pass from a clean checkout.
-- [ ] No secrets, source media, cache files, generated outputs, or local databases are tracked by Git.
+- [x] `bash scripts/verify.sh` and `bash scripts/smoke.sh` pass from a clean checkout.
+- [x] No secrets, source media, cache files, generated outputs, or local databases are tracked by Git.
 
 ## Current Evidence
 
@@ -28,7 +28,9 @@ This project is not ready for public release until every required gate below has
 - Mock `video_to_subtitle` pipeline produces `audio.wav`, `transcript.txt`, `transcript.json`, `subtitle.srt`, `quality_report.json`, `report.md`, and per-step logs without real media tools on `feature/tool-execution`.
 - Database persistence tests verify all release models can be created, committed, and read back across sessions, including UTC datetime round-trips, on `feature/persistence-coverage`.
 - README documents setup, configuration, API key hashing, Controller API startup, mock demo commands, verification commands, and troubleshooting on `feature/docs-readme-release`.
+- Clean checkout verification passed from `/tmp/mediaorchard-clean-check.MlyHUq` after fresh clone, new venv, editable install, `bash scripts/verify.sh`, and `bash scripts/smoke.sh`.
+- Git tracked-file hygiene audit found no tracked local DB files, env/config-local files, media files, cache/work/output/log directories, pyc files, or actual API key/hash patterns; placeholder `<shared-secret>` references remain documented in `plan.md`.
 
 ## Current Release Status
 
-Not releasable yet. The repository has verified Controller/API, database persistence, scheduler, Worker lifecycle, structured tool execution, mock media pipeline foundations, and release documentation, but real-media smoke test, clean-checkout verification, and repository hygiene audit are still pending.
+Not releasable yet. The repository has verified Controller/API, database persistence, scheduler, Worker lifecycle, structured tool execution, mock media pipeline foundations, release documentation, clean-checkout verification, and repository hygiene. The remaining required gate is a local real-media smoke test.
