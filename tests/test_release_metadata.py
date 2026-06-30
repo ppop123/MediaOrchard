@@ -235,3 +235,11 @@ def test_release_checklist_current_evidence_uses_main_not_feature_branches():
     text = checklist.read_text()
     assert "feature/" not in text
     assert "`main`" in text
+
+
+def test_release_checklist_current_env_evidence_does_not_keep_resolved_local_whisper_gap():
+    checklist = ROOT / "docs" / "RELEASE_CHECKLIST.md"
+
+    text = checklist.read_text()
+    assert "local `mlx_whisper`" not in text
+    assert "local `.venv/bin/python` lacks `mlx_whisper`" not in text
