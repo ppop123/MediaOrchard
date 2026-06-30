@@ -19,9 +19,9 @@ This project is not ready for public release until every required gate below has
 
 ## Current Evidence
 
-- `bash scripts/verify.sh`: harness check plus 92 tests pass on `feature/cli-orchestration`.
+- `bash scripts/verify.sh`: harness check plus 92 tests pass on `main`.
 - `bash scripts/smoke.sh`: CLI help renders successfully.
-- Process-level CLI E2E smoke passed from a temp shared root at `/tmp/mediaorchard-cli-e2e.wIxfoP/output/job_a7525c040a92`: `controller start`, `submit`, `worker start --once`, `jobs`, and artifact checks for `subtitle.srt`, `transcript.txt`, `transcript.json`, and `quality_report.json`.
+- Process-level CLI E2E smoke passed on `main` from a temp shared root at `/tmp/mediaorchard-main-cli-e2e.GldT3h/output/job_027f3f57c6f2`: `controller start`, `submit`, `worker start --once`, `jobs`, and artifact checks for `subtitle.srt`, `transcript.txt`, `transcript.json`, and `quality_report.json`.
 - Git repository initialized on `main`.
 - Controller API and state machine tests are merged into `main`.
 - Scheduler hard filters, scoring, assignment helper, active-count updates, and defensive scheduling checks are merged into `main`.
