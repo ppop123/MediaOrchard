@@ -13,3 +13,5 @@ Local multi-Mac media processing scheduler for ffmpeg and whisper workloads.
 - [ ] Phase 5: Implement scheduler and Worker runtime
 - [ ] Phase 6: Run mock pipeline and real local media smoke test
 - [ ] Phase 7: Prepare public release artifacts
+
+Release gates are tracked in `docs/RELEASE_CHECKLIST.md`.

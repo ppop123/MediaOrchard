@@ -6,6 +6,7 @@
 - `../README.md`
 - `../ARCHITECTURE.md`
 - `QUALITY.md`
+- `RELEASE_CHECKLIST.md`
 - `../plan.md`
 
 ## Working Memory
