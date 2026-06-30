@@ -10,4 +10,5 @@
 - Hardened Worker step claiming with JSON `claim-next`, `claimed_at` lease marking, node header ownership checks, and real WorkerAgent-to-Controller contract coverage.
 - Added structured Worker command execution and mock `video_to_subtitle` pipeline artifacts for non-real-media verification.
 - Added release model persistence coverage for Node, Job, Plan, Step, ToolCall, AgentDecision, and QualityReport records.
+- Expanded README with setup, configuration, API key hashing, demo commands, verification, and troubleshooting.
 - Current verification target: `bash scripts/verify.sh` with 71 passing tests; `bash scripts/smoke.sh` renders CLI help.

@@ -19,6 +19,7 @@
 - Worker command execution rejects unknown tools, rejects missing inputs, rejects non-`list[str]` argv, calls subprocess with `shell=False` and a bounded timeout, records timeout output, and records stdout/stderr logs, log-write failures, and failed exit codes.
 - Mock `video_to_subtitle` pipeline completes without real media tools and produces transcript, subtitle, quality report, human report, and per-step logs.
 - Database persistence coverage verifies Node, Job, Plan, Step, ToolCall, AgentDecision, and QualityReport records across sessions, including UTC datetime round-trips.
+- README covers setup, configuration, API key hashing, Controller API startup, mock demo commands, verification, and troubleshooting.
 
 ## Partial Surfaces
 
