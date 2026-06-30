@@ -17,6 +17,6 @@
 - Verified clean checkout install/test/smoke flow and tracked-file hygiene for release.
 - Added and ran local real-media smoke with `say`, `ffmpeg`, `ffprobe`, and `mlx_whisper`; artifacts passed quality checks.
 - Verified process-level CLI E2E from a temp shared root: Controller start, job submit, Worker `--once`, completed job listing, and expected transcript/subtitle/quality artifacts.
-- Verified process-level real-media CLI E2E from `/tmp/mediaorchard-real-cli-e2e.OfiT2z/output/job_b2643ea1001c`: generated mp4 input, ran Worker `--execution-mode real`, completed the job, and checked metadata, audio, transcript, subtitle, quality report, human report, and logs.
+- Verified process-level real-media CLI E2E from `/tmp/mediaorchard-main-real-cli-e2e.B8Gvyp/output/job_825c8527e177`: generated mp4 input, ran Worker `--execution-mode real`, completed the job, and checked metadata, audio, transcript, subtitle, quality report, human report, and logs.
 - Refreshed target Worker probes for `192.168.50.8` and `192.168.50.9`: SSH works, but Python is 3.9.6, `mlx_whisper` is missing, `ffmpeg`/`ffprobe` are not on PATH, and `/Volumes/MediaOrchard` is missing.
 - Current verification target: `bash scripts/verify.sh` with 94 passing tests; `bash scripts/smoke.sh` renders CLI help.

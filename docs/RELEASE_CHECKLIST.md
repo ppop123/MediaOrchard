@@ -20,10 +20,10 @@ This project is not ready for public release until every required gate below has
 
 ## Current Evidence
 
-- `bash scripts/verify.sh`: harness check plus 94 tests pass on `feature/real-worker-media`.
+- `bash scripts/verify.sh`: harness check plus 94 tests pass on `main`.
 - `bash scripts/smoke.sh`: CLI help renders successfully.
 - Process-level CLI E2E smoke passed on `main` from a temp shared root at `/tmp/mediaorchard-main-cli-e2e.GldT3h/output/job_027f3f57c6f2`: `controller start`, `submit`, `worker start --once`, `jobs`, and artifact checks for `subtitle.srt`, `transcript.txt`, `transcript.json`, and `quality_report.json`.
-- Process-level real-media CLI E2E smoke passed on `feature/real-worker-media` from `/tmp/mediaorchard-real-cli-e2e.OfiT2z/output/job_b2643ea1001c`: generated an input mp4 with `say` and `ffmpeg`, then ran `controller start`, `submit`, `worker start --execution-mode real --once`, `jobs`, and artifact checks for `input_meta.json`, `audio.wav`, `subtitle.srt`, `transcript.txt`, `transcript.json`, `quality_report.json`, `report.md`, and passed quality status.
+- Process-level real-media CLI E2E smoke passed on `main` from `/tmp/mediaorchard-main-real-cli-e2e.B8Gvyp/output/job_825c8527e177`: generated an input mp4 with `say` and `ffmpeg`, then ran `controller start`, `submit`, `worker start --execution-mode real --once`, `jobs`, and artifact checks for `input_meta.json`, `audio.wav`, `subtitle.srt`, `transcript.txt`, `transcript.json`, `quality_report.json`, `report.md`, and passed quality status.
 - Git repository initialized on `main`.
 - Controller API and state machine tests are merged into `main`.
 - Scheduler hard filters, scoring, assignment helper, active-count updates, and defensive scheduling checks are merged into `main`.
