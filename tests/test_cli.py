@@ -2,6 +2,7 @@ from typer.testing import CliRunner
 
 from mediaorchard.cli import main as cli_main
 from mediaorchard.cli.main import app
+from mediaorchard.worker.preflight import PreflightCheck, WorkerPreflightResult
 
 
 def test_cli_help_loads():
@@ -224,3 +225,39 @@ def test_submit_rejects_missing_input_file(monkeypatch, tmp_path):
 
     assert result.exit_code != 0
     assert "input_file does not exist" in result.output
+
+
+def test_doctor_worker_reports_preflight_failures(monkeypatch, tmp_path):
+    def fake_preflight(config):
+        assert config.runtime_python_executable == ".venv/bin/python"
+        assert config.whisper_python_executable == "python3"
+        return WorkerPreflightResult(
+            target=config.target,
+            checks=[
+                PreflightCheck("python>=3.11", False, "found 3.9.6"),
+                PreflightCheck("ffmpeg", False, "missing"),
+                PreflightCheck("shared_root", True, str(config.shared_root)),
+            ],
+        )
+
+    monkeypatch.setattr(cli_main, "run_worker_preflight", fake_preflight)
+    result = CliRunner().invoke(
+        app,
+        [
+            "doctor",
+            "worker",
+            "--target",
+            "wangyan@192.168.50.8",
+            "--shared-root",
+            str(tmp_path),
+            "--runtime-python",
+            ".venv/bin/python",
+            "--whisper-python",
+            "python3",
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert "wangyan@192.168.50.8 FAIL" in result.output
+    assert "FAIL python>=3.11: found 3.9.6" in result.output
+    assert "PASS shared_root" in result.output

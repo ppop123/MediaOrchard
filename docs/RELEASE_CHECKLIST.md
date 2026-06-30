@@ -17,10 +17,11 @@ This project is not ready for public release until every required gate below has
 - [x] README documents setup, config, API key hashing, demo commands, and troubleshooting.
 - [x] `bash scripts/verify.sh` and `bash scripts/smoke.sh` pass from a clean checkout.
 - [x] No secrets, source media, cache files, generated outputs, or local databases are tracked by Git.
+- [x] Worker preflight can check local and SSH targets without modifying remote machines.
 
 ## Current Evidence
 
-- `bash scripts/verify.sh`: harness check plus 94 tests pass on `main`.
+- `bash scripts/verify.sh`: harness check plus 99 tests pass on `feature/worker-preflight`.
 - `bash scripts/smoke.sh`: CLI help renders successfully.
 - Process-level CLI E2E smoke passed on `main` from a temp shared root at `/tmp/mediaorchard-main-cli-e2e.GldT3h/output/job_027f3f57c6f2`: `controller start`, `submit`, `worker start --once`, `jobs`, and artifact checks for `subtitle.srt`, `transcript.txt`, `transcript.json`, and `quality_report.json`.
 - Process-level real-media CLI E2E smoke passed on `main` from `/tmp/mediaorchard-main-real-cli-e2e.B8Gvyp/output/job_825c8527e177`: generated an input mp4 with `say` and `ffmpeg`, then ran `controller start`, `submit`, `worker start --execution-mode real --once`, `jobs`, and artifact checks for `input_meta.json`, `audio.wav`, `subtitle.srt`, `transcript.txt`, `transcript.json`, `quality_report.json`, `report.md`, and passed quality status.
@@ -35,8 +36,10 @@ This project is not ready for public release until every required gate below has
 - Clean checkout verification passed from `/tmp/mediaorchard-clean-check.wcKBCH/repo` after fresh clone, new venv, editable install, `bash scripts/verify.sh` with 94 tests, and `bash scripts/smoke.sh`.
 - Git tracked-file hygiene audit found no tracked local DB files, env/config-local files, media files, cache/work/output/log directories, pyc files, or actual API key/hash patterns; placeholder `<shared-secret>` references remain documented in `plan.md`.
 - Local real-media smoke passed at `/tmp/mediaorchard-real-smoke.4Jc4aF/output/real_smoke` using macOS `say`, `ffmpeg` 7.1.1, `ffprobe` 7.1.1, system Python `mlx-whisper` 0.4.3, and model `mlx-community/whisper-tiny`; produced `subtitle.srt`, `transcript.txt`, `transcript.json`, `quality_report.json`, `report.md`, `audio.wav`, `input_meta.json`, and logs.
-- Target Worker probes on `192.168.50.8` and `192.168.50.9` passed SSH reachability but found Python 3.9.6, no `mlx_whisper` import, no `/Volumes/MediaOrchard`, and no `ffmpeg`/`ffprobe` on PATH.
+- Read-only Worker preflight command added as `mediaorchard doctor worker`.
+- `mediaorchard doctor worker --target local --target wangyan@192.168.50.8 --target wangyan@192.168.50.9 --shared-root /Volumes/MediaOrchard --runtime-python python3 --whisper-python python3` found local system `python3` is 3.9.6, local ffmpeg/ffprobe/mlx_whisper are available, and local shared root is missing; both remotes have system `python3` 3.9.6 plus ffmpeg/ffprobe, but lack `mlx_whisper` and `/Volumes/MediaOrchard`.
+- Worker preflight timeout handling is covered by a regression test so a slow local command or SSH target is reported as a failed check instead of crashing the diagnostic run.
 
 ## Current Release Status
 
-Single-Mac release candidate for real-media CLI execution. The code now has current evidence for Controller/Worker CLI orchestration, durable state, scheduling, deterministic smoke mode, and one local real-media Worker run through `ffprobe`, `ffmpeg`, and `mlx_whisper`. Do not promise multi-Mac real-media execution publicly until the target Workers have Python 3.11+, `ffmpeg`, `ffprobe`, a working whisper backend, and the shared root mounted at the same resolved path.
+Single-Mac release candidate for real-media CLI execution. The code now has current evidence for Controller/Worker CLI orchestration, durable state, scheduling, deterministic smoke mode, one local real-media Worker run through `ffprobe`, `ffmpeg`, and `mlx_whisper`, and read-only Worker preflight diagnostics. Do not promise multi-Mac real-media execution publicly until the target Workers pass `mediaorchard doctor worker` with Python 3.11+, `ffmpeg`, `ffprobe`, a working whisper backend, and the shared root mounted at the same resolved path.

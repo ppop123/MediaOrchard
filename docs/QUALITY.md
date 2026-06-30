@@ -18,6 +18,7 @@
 - WorkerAgent registration, heartbeat, real Controller `claim-next`, and shutdown interruption reporting are covered by unit tests.
 - Worker runtime integration covers submitted job claim, deterministic pipeline execution, Controller completion reporting, and release-shaped artifact generation.
 - Worker real-media mode covers submitted job claim, `ffprobe` metadata, `ffmpeg` audio extraction, `mlx_whisper` transcription, Controller completion reporting, and release-shaped artifact generation.
+- Worker preflight covers local and SSH target checks for runtime Python, `ffmpeg`, `ffprobe`, `mlx_whisper`, shared root readiness, and command timeout reporting.
 - Worker command execution rejects unknown tools, rejects missing inputs, rejects non-`list[str]` argv, calls subprocess with `shell=False` and a bounded timeout, records timeout output, and records stdout/stderr logs, log-write failures, and failed exit codes.
 - Mock `video_to_subtitle` pipeline completes without real media tools and produces transcript, subtitle, quality report, human report, and per-step logs.
 - Database persistence coverage verifies Node, Job, Plan, Step, ToolCall, AgentDecision, and QualityReport records across sessions, including UTC datetime round-trips.
@@ -26,8 +27,9 @@
 - Tracked-file hygiene audit found no local databases, env/config-local files, source media, generated media outputs, cache/work/output/log directories, pyc files, or actual API key/hash patterns.
 - Local real-media smoke produced transcript, subtitle, quality report, human report, extracted audio, media metadata, and command logs with `ffmpeg`, `ffprobe`, and `mlx_whisper`.
 - Process-level CLI E2E smoke verified `controller start`, `submit`, `worker start --once`, `jobs`, and expected artifact files from a temp shared root in both deterministic and real-media modes.
+- Read-only Worker preflight verified the current local and SSH target readiness state without modifying remote machines.
 
 ## Partial Surfaces
 
 - MVP Worker authentication still uses a shared API key plus node-id header binding; per-node credentials or mTLS are post-MVP hardening.
-- Multi-Mac real-media execution still needs validation after target Workers have Python 3.11+, `ffmpeg`, `ffprobe`, `mlx_whisper`, and the shared root mounted.
+- Multi-Mac real-media execution still needs target Workers to pass `mediaorchard doctor worker`; current blockers are missing shared root on all checked targets, missing remote `mlx_whisper`, and unsuitable system `python3`.

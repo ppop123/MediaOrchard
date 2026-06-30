@@ -14,6 +14,7 @@ from mediaorchard.cli.runtime import (
     run_worker,
     submit_job,
 )
+from mediaorchard.worker.preflight import WorkerPreflightConfig, run_worker_preflight
 
 app = typer.Typer(
     name="mediaorchard",
@@ -23,6 +24,7 @@ app = typer.Typer(
 
 controller_app = typer.Typer(help="Run and inspect the Controller service.")
 worker_app = typer.Typer(help="Run and inspect Worker agents.")
+doctor_app = typer.Typer(help="Run release-readiness diagnostics.")
 
 
 @controller_app.command("start")
@@ -220,6 +222,38 @@ def submit(
     typer.echo(f"Created job {_display(job.get('id'))} ({_display(job.get('status'))})")
 
 
+@doctor_app.command("worker")
+def doctor_worker(
+    targets: list[str] | None = typer.Option(None, "--target"),
+    shared_root: Path = typer.Option(Path("/Volumes/MediaOrchard"), "--shared-root"),
+    runtime_python: str = typer.Option("python3", "--runtime-python"),
+    whisper_python: str = typer.Option("python3", "--whisper-python"),
+    timeout_seconds: int = typer.Option(10, "--timeout-seconds", min=1),
+) -> None:
+    """Check local or SSH Worker runtime requirements."""
+    target_values = targets or ["local"]
+    results = [
+        run_worker_preflight(
+            WorkerPreflightConfig(
+                target=target,
+                shared_root=shared_root,
+                runtime_python_executable=runtime_python,
+                whisper_python_executable=whisper_python,
+                timeout_seconds=timeout_seconds,
+            )
+        )
+        for target in target_values
+    ]
+
+    for result in results:
+        typer.echo(f"{result.target} {'PASS' if result.ok else 'FAIL'}")
+        for check in result.checks:
+            typer.echo(f"  {'PASS' if check.ok else 'FAIL'} {check.name}: {check.detail}")
+
+    if not all(result.ok for result in results):
+        raise typer.Exit(code=1)
+
+
 def _require_api_key(api_key: str | None) -> str:
     raw_api_key = api_key or os.getenv("MEDIAORCHARD_API_KEY")
     if not raw_api_key:
@@ -244,6 +278,7 @@ def _display(value: object) -> str:
 
 app.add_typer(controller_app, name="controller")
 app.add_typer(worker_app, name="worker")
+app.add_typer(doctor_app, name="doctor")
 
 
 if __name__ == "__main__":

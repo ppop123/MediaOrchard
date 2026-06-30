@@ -138,6 +138,7 @@ mediaorchard worker start --node-id mac-studio --help
 mediaorchard submit --help
 mediaorchard jobs --help
 mediaorchard nodes --help
+mediaorchard doctor worker --help
 ```
 
 Single-machine CLI demo without real media tools:
@@ -220,6 +221,20 @@ $smoke_root/output/real_smoke/
   logs/
 ```
 
+Worker preflight before multi-Mac rollout:
+
+```bash
+mediaorchard doctor worker \
+  --target local \
+  --target wangyan@192.168.50.8 \
+  --target wangyan@192.168.50.9 \
+  --shared-root /Volumes/MediaOrchard \
+  --runtime-python python3 \
+  --whisper-python python3
+```
+
+The command is read-only. It checks the Python version used to run the Worker, `ffmpeg`, `ffprobe`, the Python executable used for `mlx_whisper`, and the shared root directory. It returns exit code `1` when any target is not ready.
+
 Single-machine real-media CLI demo:
 
 ```bash
@@ -286,6 +301,7 @@ Focused checks:
 .venv/bin/pytest tests/test_worker_lifecycle.py -q
 .venv/bin/pytest tests/test_tool_execution.py tests/test_mock_pipeline.py -q
 .venv/bin/pytest tests/test_real_media_smoke.py -q
+.venv/bin/pytest tests/test_worker_preflight.py -q
 .venv/bin/pytest tests/test_db_persistence.py -q
 ```
 
