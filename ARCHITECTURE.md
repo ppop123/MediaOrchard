@@ -17,6 +17,8 @@ Current implementation only covers Milestone 0/1 foundations. The planned runtim
 3. Workers execute known tools with structured argv and publish cross-step artifacts to shared work storage.
 4. Controller recovery fences late completions with `assignment_epoch`.
 
+Until separate operator/user auth exists, all Controller API endpoints require the shared API key. This is intentionally conservative for the local MVP and can be split into user and Worker auth later.
+
 ## Verification Surfaces
 
 - `bash scripts/verify.sh`: harness check plus unit tests.

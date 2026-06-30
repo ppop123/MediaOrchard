@@ -8,8 +8,12 @@
 - Path allowlisting rejects outside-root paths.
 - Job output paths are derived from safe job ids.
 - Shared-root validation detects missing and mismatched roots.
+- Controller Worker endpoints reject missing authentication.
+- Node registration, heartbeat, job creation, job retrieval, and empty `claim-next` are covered by API tests.
+- Step state transitions, `assignment_epoch` fencing, and timeout recovery are covered by unit tests.
 
 ## Partial Surfaces
 
-- Controller API, database models, scheduler, Worker lifecycle, and media tool execution are still planned but not implemented.
+- Full database persistence coverage for all release models is still incomplete.
+- Scheduler, Worker lifecycle, and media tool execution are still planned but not implemented.
 - End-to-end media processing cannot be claimed until the mock pipeline and real ffmpeg/whisper paths are implemented.

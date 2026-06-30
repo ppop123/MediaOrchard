@@ -4,9 +4,9 @@ This project is not ready for public release until every required gate below has
 
 ## Release 0.1 Required Gates
 
-- [ ] Controller API exists and has tests for jobs, nodes, heartbeat, and authenticated Worker calls.
+- [x] Controller API exists and has tests for jobs, nodes, heartbeat, and authenticated Worker calls.
 - [ ] Database models persist Node, Job, Plan, Step, ToolCall, AgentDecision, and QualityReport records.
-- [ ] State machine tests cover legal transitions, illegal transitions, `assignment_epoch`, and Worker timeout recovery.
+- [x] State machine tests cover legal transitions, illegal transitions, `assignment_epoch`, and Worker timeout recovery.
 - [ ] Scheduler tests cover offline, stale heartbeat, CPU, memory, disk, thermal, battery, shared-root, and concurrency filters.
 - [ ] Worker lifecycle tests cover registration, heartbeat, assigned-step claim, graceful shutdown, and stale completion rejection.
 - [ ] Tool execution uses structured `list[str]` argv with `shell=False`.
@@ -21,8 +21,8 @@ This project is not ready for public release until every required gate below has
 - `bash scripts/verify.sh`: harness check plus 9 tests pass.
 - `bash scripts/smoke.sh`: CLI help renders successfully.
 - Git repository initialized on `main`.
+- `feature/controller-core`: Controller API and state machine tests bring verification to 18 tests.
 
 ## Current Release Status
 
-Not releasable yet. The repository has a verified foundation, but Controller, database, scheduler, Worker runtime, media tools, and end-to-end pipeline are still pending.
-
+Not releasable yet. The repository has a verified Controller/API foundation, but scheduler, Worker runtime, media tools, mock pipeline, real-media smoke test, and full release documentation are still pending.
