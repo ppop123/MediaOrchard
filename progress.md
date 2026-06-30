@@ -35,4 +35,5 @@
 - Ran `bash scripts/release_env_check.sh` on the current targets; it returned exit code `1` as expected because local whisper, remote Worker venvs, and the shared root are still missing, while still producing the bootstrap dry-run.
 - Hardened `scripts/release_env_check.sh` after Claude review: wheel discovery is version-agnostic, empty target groups are allowed, and tests cover failure aggregation.
 - Verified `bash scripts/release_check.sh` after adding the release environment gate: harness check, 123 passing tests, CLI smoke, `sdist`/wheel build, `twine check`, clean wheel install smoke, and tracked-file hygiene guard all pass.
+- Re-ran `bash scripts/release_env_check.sh` on `main`; it remains a read-only failing gate with exit code `1` until local `mlx_whisper`, remote Worker venvs, and `/Volumes/MediaOrchard` are prepared.
 - Ran read-only Worker preflight after merging `--copy-wheel`: local `.venv` still lacks `mlx_whisper`; both remotes still lack the per-user Worker venv; all targets still lack `/Volumes/MediaOrchard`.
