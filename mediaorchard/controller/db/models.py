@@ -5,7 +5,7 @@ from typing import Any
 from uuid import uuid4
 
 from sqlalchemy import Column
-from sqlalchemy.types import JSON
+from sqlalchemy.types import DateTime, JSON, TypeDecorator
 from sqlmodel import Field, SQLModel
 
 from mediaorchard.shared.enums import JobStatus, NodeStatus, StepStatus
@@ -13,6 +13,25 @@ from mediaorchard.shared.enums import JobStatus, NodeStatus, StepStatus
 
 def utcnow() -> datetime:
     return datetime.now(UTC)
+
+
+class UTCDateTime(TypeDecorator):
+    impl = DateTime
+    cache_ok = True
+
+    def process_bind_param(self, value: datetime | None, dialect) -> datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=UTC)
+        return value.astimezone(UTC).replace(tzinfo=None)
+
+    def process_result_value(self, value: datetime | None, dialect) -> datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            return value.replace(tzinfo=UTC)
+        return value.astimezone(UTC)
 
 
 def prefixed_id(prefix: str) -> str:
@@ -36,9 +55,9 @@ class Node(SQLModel, table=True):
     free_disk_gb: float = 0.0
     thermal_state: str = "unknown"
     on_battery: bool = False
-    last_heartbeat_at: datetime | None = None
-    created_at: datetime = Field(default_factory=utcnow)
-    updated_at: datetime = Field(default_factory=utcnow)
+    last_heartbeat_at: datetime | None = Field(default=None, sa_column=Column(UTCDateTime(), nullable=True))
+    created_at: datetime = Field(default_factory=utcnow, sa_column=Column(UTCDateTime(), nullable=False))
+    updated_at: datetime = Field(default_factory=utcnow, sa_column=Column(UTCDateTime(), nullable=False))
 
 
 class Job(SQLModel, table=True):
@@ -55,9 +74,9 @@ class Job(SQLModel, table=True):
     plan_id: str | None = None
     progress: float = 0.0
     error_message: str | None = None
-    created_at: datetime = Field(default_factory=utcnow)
-    updated_at: datetime = Field(default_factory=utcnow)
-    completed_at: datetime | None = None
+    created_at: datetime = Field(default_factory=utcnow, sa_column=Column(UTCDateTime(), nullable=False))
+    updated_at: datetime = Field(default_factory=utcnow, sa_column=Column(UTCDateTime(), nullable=False))
+    completed_at: datetime | None = Field(default=None, sa_column=Column(UTCDateTime(), nullable=True))
 
 
 class Plan(SQLModel, table=True):
@@ -67,8 +86,8 @@ class Plan(SQLModel, table=True):
     created_by: str = "rules"
     plan_schema_version: str = "1"
     plan_json: dict[str, Any] = Field(default_factory=lambda: {"version": "1"}, sa_column=Column(JSON))
-    created_at: datetime = Field(default_factory=utcnow)
-    updated_at: datetime = Field(default_factory=utcnow)
+    created_at: datetime = Field(default_factory=utcnow, sa_column=Column(UTCDateTime(), nullable=False))
+    updated_at: datetime = Field(default_factory=utcnow, sa_column=Column(UTCDateTime(), nullable=False))
 
 
 class Step(SQLModel, table=True):
@@ -80,15 +99,15 @@ class Step(SQLModel, table=True):
     status: StepStatus = Field(default=StepStatus.PENDING)
     depends_on: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     assigned_node_id: str | None = None
-    assigned_at: datetime | None = None
-    claimed_at: datetime | None = None
+    assigned_at: datetime | None = Field(default=None, sa_column=Column(UTCDateTime(), nullable=True))
+    claimed_at: datetime | None = Field(default=None, sa_column=Column(UTCDateTime(), nullable=True))
     assignment_epoch: int = 0
     input_json: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     output_json: dict[str, Any] | None = Field(default=None, sa_column=Column(JSON))
     retry_count: int = 0
     max_retries: int = 2
-    started_at: datetime | None = None
-    completed_at: datetime | None = None
+    started_at: datetime | None = Field(default=None, sa_column=Column(UTCDateTime(), nullable=True))
+    completed_at: datetime | None = Field(default=None, sa_column=Column(UTCDateTime(), nullable=True))
     error_message: str | None = None
 
 
@@ -103,8 +122,8 @@ class ToolCall(SQLModel, table=True):
     stdout_path: str | None = None
     stderr_path: str | None = None
     exit_code: int | None = None
-    started_at: datetime | None = None
-    completed_at: datetime | None = None
+    started_at: datetime | None = Field(default=None, sa_column=Column(UTCDateTime(), nullable=True))
+    completed_at: datetime | None = Field(default=None, sa_column=Column(UTCDateTime(), nullable=True))
 
 
 class AgentDecision(SQLModel, table=True):
@@ -115,7 +134,7 @@ class AgentDecision(SQLModel, table=True):
     decision_json: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     reason: str
     confidence: float | None = None
-    created_at: datetime = Field(default_factory=utcnow)
+    created_at: datetime = Field(default_factory=utcnow, sa_column=Column(UTCDateTime(), nullable=False))
 
 
 class QualityReport(SQLModel, table=True):
@@ -125,4 +144,4 @@ class QualityReport(SQLModel, table=True):
     checks_json: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     warnings_json: list[Any] = Field(default_factory=list, sa_column=Column(JSON))
     recommendations_json: list[Any] = Field(default_factory=list, sa_column=Column(JSON))
-    created_at: datetime = Field(default_factory=utcnow)
+    created_at: datetime = Field(default_factory=utcnow, sa_column=Column(UTCDateTime(), nullable=False))

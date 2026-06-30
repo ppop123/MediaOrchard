@@ -18,10 +18,10 @@
 - WorkerAgent registration, heartbeat, real Controller `claim-next`, and shutdown interruption reporting are covered by unit tests.
 - Worker command execution rejects unknown tools, rejects missing inputs, rejects non-`list[str]` argv, calls subprocess with `shell=False` and a bounded timeout, records timeout output, and records stdout/stderr logs, log-write failures, and failed exit codes.
 - Mock `video_to_subtitle` pipeline completes without real media tools and produces transcript, subtitle, quality report, human report, and per-step logs.
+- Database persistence coverage verifies Node, Job, Plan, Step, ToolCall, AgentDecision, and QualityReport records across sessions, including UTC datetime round-trips.
 
 ## Partial Surfaces
 
-- Full database persistence coverage for all release models is still incomplete.
 - MVP Worker authentication still uses a shared API key plus node-id header binding; per-node credentials or mTLS are post-MVP hardening.
 - Real ffmpeg/whisper execution still needs local media smoke coverage.
 - End-to-end production media processing cannot be claimed until the real-media path is verified on the target Macs.

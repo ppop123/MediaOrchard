@@ -9,4 +9,5 @@
 - Added Step lifecycle endpoints and minimal WorkerAgent lifecycle methods for registration, heartbeat, claim, and shutdown interruption reporting.
 - Hardened Worker step claiming with JSON `claim-next`, `claimed_at` lease marking, node header ownership checks, and real WorkerAgent-to-Controller contract coverage.
 - Added structured Worker command execution and mock `video_to_subtitle` pipeline artifacts for non-real-media verification.
-- Current verification target: `bash scripts/verify.sh` with 69 passing tests; `bash scripts/smoke.sh` renders CLI help.
+- Added release model persistence coverage for Node, Job, Plan, Step, ToolCall, AgentDecision, and QualityReport records.
+- Current verification target: `bash scripts/verify.sh` with 71 passing tests; `bash scripts/smoke.sh` renders CLI help.
