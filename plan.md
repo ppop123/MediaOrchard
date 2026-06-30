@@ -964,7 +964,7 @@ Create: tests/test_scheduler.py
 
 ### Milestone 5: Worker Runtime And Tools
 
-**Status:** WorkerAgent registration, heartbeat, assigned-step claim, and shutdown interruption reporting are implemented. Tool execution, process management, metrics collection, and mock media pipeline are still pending.
+**Status:** WorkerAgent registration, heartbeat, assigned-step claim, shutdown interruption reporting, structured command execution, and mock media pipeline artifacts are implemented. Process management, live metrics collection, and real ffmpeg/whisper smoke coverage are still pending.
 
 **Files:**
 

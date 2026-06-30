@@ -16,10 +16,12 @@
 - Step claim/start/progress/complete/fail API paths validate `assignment_epoch` and assigned-node ownership.
 - Assigned Step claims write a `claimed_at` lease and do not return the same Step twice.
 - WorkerAgent registration, heartbeat, real Controller `claim-next`, and shutdown interruption reporting are covered by unit tests.
+- Worker command execution rejects unknown tools, rejects missing inputs, rejects non-`list[str]` argv, calls subprocess with `shell=False` and a bounded timeout, records timeout output, and records stdout/stderr logs, log-write failures, and failed exit codes.
+- Mock `video_to_subtitle` pipeline completes without real media tools and produces transcript, subtitle, quality report, human report, and per-step logs.
 
 ## Partial Surfaces
 
 - Full database persistence coverage for all release models is still incomplete.
 - MVP Worker authentication still uses a shared API key plus node-id header binding; per-node credentials or mTLS are post-MVP hardening.
-- Media tool execution is still planned but not implemented.
-- End-to-end media processing cannot be claimed until the mock pipeline and real ffmpeg/whisper paths are implemented.
+- Real ffmpeg/whisper execution still needs local media smoke coverage.
+- End-to-end production media processing cannot be claimed until the real-media path is verified on the target Macs.
