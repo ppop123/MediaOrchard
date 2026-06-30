@@ -15,6 +15,7 @@ class WorkerBootstrapConfig:
     python_executable: str = "python3"
     package_spec: str = "mediaorchard==0.1.0"
     package_wheel: Path | None = None
+    copy_wheel: bool = False
     whisper_package: str = "mlx-whisper"
     timeout_seconds: int = 300
 
@@ -56,7 +57,10 @@ def build_bootstrap_script(config: WorkerBootstrapConfig) -> str:
     shared_dirs = " ".join(shlex.quote(str(shared_root / name)) for name in SHARED_ROOT_DIRS)
     lines: list[str] = []
     if wheel_target is not None and config.package_wheel is not None:
-        lines.append(f"# Copy {config.package_wheel} to {wheel_target} before --execute.")
+        if config.copy_wheel:
+            lines.append(f"# --copy-wheel will copy {config.package_wheel} to {wheel_target} before execution.")
+        else:
+            lines.append(f"# Copy {config.package_wheel} to {wheel_target} before --execute.")
     lines.extend(
         [
             "set -euo pipefail",
@@ -92,8 +96,12 @@ def build_bootstrap_script(config: WorkerBootstrapConfig) -> str:
     return "\n".join(lines)
 
 
+def is_local_target(target: str) -> bool:
+    return target in {"", "local", "localhost", "127.0.0.1"}
+
+
 def build_bootstrap_command_argv(target: str) -> list[str]:
-    if target in {"", "local", "localhost", "127.0.0.1"}:
+    if is_local_target(target):
         return ["bash", "-s"]
     return [
         "ssh",
@@ -104,6 +112,36 @@ def build_bootstrap_command_argv(target: str) -> list[str]:
         target,
         "bash",
         "-s",
+    ]
+
+
+def build_wheel_copy_command_argvs(config: WorkerBootstrapConfig) -> list[list[str]]:
+    if config.package_wheel is None:
+        return []
+
+    wheel = config.package_wheel.expanduser()
+    packages_dir = config.install_root.expanduser() / "packages"
+    wheel_target = packages_dir / wheel.name
+    if is_local_target(config.target):
+        return [
+            ["mkdir", "-p", str(packages_dir)],
+            ["cp", str(wheel), str(wheel_target)],
+        ]
+    remote_packages_dir = shlex.quote(str(packages_dir))
+    remote_wheel_target = shlex.quote(str(wheel_target))
+    return [
+        [
+            "ssh",
+            "-o",
+            "BatchMode=yes",
+            "-o",
+            "ConnectTimeout=5",
+            config.target,
+            "mkdir",
+            "-p",
+            remote_packages_dir,
+        ],
+        ["scp", str(wheel), f"{config.target}:{remote_wheel_target}"],
     ]
 
 
@@ -118,6 +156,18 @@ def run_worker_bootstrap(
         return WorkerBootstrapResult(target=config.target, executed=False, script=script)
 
     runner = command_runner or run_command
+    if config.copy_wheel and config.package_wheel is not None:
+        for argv in build_wheel_copy_command_argvs(config):
+            completed = runner(argv, config.timeout_seconds, "")
+            if completed.returncode != 0:
+                return WorkerBootstrapResult(
+                    target=config.target,
+                    executed=True,
+                    script=script,
+                    returncode=completed.returncode,
+                    stdout=completed.stdout,
+                    stderr=completed.stderr,
+                )
     completed = runner(build_bootstrap_command_argv(config.target), config.timeout_seconds, script)
     return WorkerBootstrapResult(
         target=config.target,

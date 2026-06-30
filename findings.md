@@ -22,6 +22,9 @@
 - Missing Worker directories and programs may be prepared through an explicit bootstrap step: create the shared root layout on each target and install or copy required tools such as Python, `ffmpeg`, `ffprobe`, and `mlx_whisper` before enabling multi-Mac real-media scheduling.
 - Worker bootstrap should be dry-run first because it creates directories and installs packages on local or SSH targets; execution requires explicit `--execute`.
 - Until MediaOrchard is published to an index, Worker bootstrap should use `--wheel` with a locally built release wheel copied to each target's install root.
+- Worker bootstrap can now use explicit `--copy-wheel --execute` to create the target package directory and copy the local wheel before running the setup script; without `--copy-wheel`, the dry-run remains a manual copy plan.
+- Read-only probes found `192.168.50.8` has `/opt/homebrew/bin/python3.14` but not `python3.13`; `192.168.50.9` has both, so `/opt/homebrew/bin/python3.14` is the common bootstrap Python path for these two targets.
+- `/Volumes/MediaOrchard` is still missing on local and both target machines, and `/Volumes` is not writable by the `wangyan` user on the remotes; public multi-Mac claims need the shared root mounted or an agreed writable shared path before final Worker preflight can pass.
 
 ## Release Packaging Findings
 

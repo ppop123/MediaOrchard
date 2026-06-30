@@ -263,6 +263,7 @@ def doctor_worker_bootstrap(
     python_executable: str = typer.Option("python3", "--python"),
     package_spec: str = typer.Option(DEFAULT_PACKAGE_SPEC, "--package-spec"),
     package_wheel: Path | None = typer.Option(None, "--wheel"),
+    copy_wheel: bool = typer.Option(False, "--copy-wheel"),
     whisper_package: str = typer.Option("mlx-whisper", "--whisper-package"),
     execute: bool = typer.Option(False, "--execute"),
     timeout_seconds: int = typer.Option(300, "--timeout-seconds", min=1),
@@ -272,6 +273,8 @@ def doctor_worker_bootstrap(
         raise typer.BadParameter("wheel does not exist")
     if package_wheel is not None and package_spec != DEFAULT_PACKAGE_SPEC:
         raise typer.BadParameter("--package-spec cannot be combined with --wheel")
+    if copy_wheel and package_wheel is None:
+        raise typer.BadParameter("--copy-wheel requires --wheel")
     target_values = targets or ["local"]
     results = [
         run_worker_bootstrap(
@@ -282,6 +285,7 @@ def doctor_worker_bootstrap(
                 python_executable=python_executable,
                 package_spec=package_spec,
                 package_wheel=package_wheel,
+                copy_wheel=copy_wheel,
                 whisper_package=whisper_package,
                 timeout_seconds=timeout_seconds,
             ),

@@ -96,3 +96,135 @@ def test_worker_bootstrap_execute_runs_command():
     assert calls[0][1] == 30
     assert "python3" in calls[0][2]
     assert result.stdout == "ready\n"
+
+
+def test_worker_bootstrap_execute_copies_remote_wheel_before_script():
+    calls = []
+
+    def fake_runner(argv, timeout, stdin):
+        calls.append((argv, timeout, stdin))
+        return FakeCompletedProcess(stdout="ok\n")
+
+    result = run_worker_bootstrap(
+        WorkerBootstrapConfig(
+            target="wangyan@192.168.50.8",
+            install_root=Path("/Users/wangyan/.mediaorchard"),
+            package_wheel=Path("/tmp/dist/mediaorchard-0.1.0-py3-none-any.whl"),
+            copy_wheel=True,
+            timeout_seconds=30,
+        ),
+        execute=True,
+        command_runner=fake_runner,
+    )
+
+    assert result.ok is True
+    assert calls[0] == (
+        [
+            "ssh",
+            "-o",
+            "BatchMode=yes",
+            "-o",
+            "ConnectTimeout=5",
+            "wangyan@192.168.50.8",
+            "mkdir",
+            "-p",
+            "/Users/wangyan/.mediaorchard/packages",
+        ],
+        30,
+        "",
+    )
+    assert calls[1] == (
+        [
+            "scp",
+            "/tmp/dist/mediaorchard-0.1.0-py3-none-any.whl",
+            "wangyan@192.168.50.8:/Users/wangyan/.mediaorchard/packages/mediaorchard-0.1.0-py3-none-any.whl",
+        ],
+        30,
+        "",
+    )
+    assert calls[2][0] == build_bootstrap_command_argv("wangyan@192.168.50.8")
+    assert "test -f /Users/wangyan/.mediaorchard/packages/mediaorchard-0.1.0-py3-none-any.whl" in calls[2][2]
+
+
+def test_worker_bootstrap_remote_copy_quotes_target_package_path():
+    calls = []
+
+    def fake_runner(argv, timeout, stdin):
+        calls.append((argv, timeout, stdin))
+        return FakeCompletedProcess(stdout="ok\n")
+
+    result = run_worker_bootstrap(
+        WorkerBootstrapConfig(
+            target="wangyan@192.168.50.8",
+            install_root=Path("/Users/wang yan/.mediaorchard"),
+            package_wheel=Path("/tmp/dist/mediaorchard-0.1.0-py3-none-any.whl"),
+            copy_wheel=True,
+        ),
+        execute=True,
+        command_runner=fake_runner,
+    )
+
+    assert result.ok is True
+    assert calls[0][0][-1] == "'/Users/wang yan/.mediaorchard/packages'"
+    assert calls[1][0][-1] == (
+        "wangyan@192.168.50.8:'/Users/wang yan/.mediaorchard/packages/"
+        "mediaorchard-0.1.0-py3-none-any.whl'"
+    )
+
+
+def test_worker_bootstrap_execute_copies_local_wheel_before_script():
+    calls = []
+
+    def fake_runner(argv, timeout, stdin):
+        calls.append((argv, timeout, stdin))
+        return FakeCompletedProcess(stdout="ok\n")
+
+    result = run_worker_bootstrap(
+        WorkerBootstrapConfig(
+            target="local",
+            install_root=Path("/tmp/mediaorchard-install"),
+            package_wheel=Path("/tmp/dist/mediaorchard-0.1.0-py3-none-any.whl"),
+            copy_wheel=True,
+        ),
+        execute=True,
+        command_runner=fake_runner,
+    )
+
+    assert result.ok is True
+    assert calls[0] == (["mkdir", "-p", "/tmp/mediaorchard-install/packages"], 300, "")
+    assert calls[1] == (
+        [
+            "cp",
+            "/tmp/dist/mediaorchard-0.1.0-py3-none-any.whl",
+            "/tmp/mediaorchard-install/packages/mediaorchard-0.1.0-py3-none-any.whl",
+        ],
+        300,
+        "",
+    )
+    assert calls[2][0] == build_bootstrap_command_argv("local")
+
+
+def test_worker_bootstrap_copy_wheel_failure_stops_before_script():
+    calls = []
+
+    def fake_runner(argv, timeout, stdin):
+        calls.append((argv, timeout, stdin))
+        if argv[0] == "scp":
+            return FakeCompletedProcess(returncode=1, stderr="copy failed\n")
+        return FakeCompletedProcess(stdout="ok\n")
+
+    result = run_worker_bootstrap(
+        WorkerBootstrapConfig(
+            target="wangyan@192.168.50.8",
+            install_root=Path("/Users/wangyan/.mediaorchard"),
+            package_wheel=Path("/tmp/dist/mediaorchard-0.1.0-py3-none-any.whl"),
+            copy_wheel=True,
+        ),
+        execute=True,
+        command_runner=fake_runner,
+    )
+
+    assert result.ok is False
+    assert result.returncode == 1
+    assert result.stderr == "copy failed\n"
+    assert [call[0][0] for call in calls] == ["ssh", "scp"]

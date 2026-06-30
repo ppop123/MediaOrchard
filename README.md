@@ -245,18 +245,27 @@ mediaorchard doctor worker-bootstrap \
   --target wangyan@192.168.50.9 \
   --install-root /Users/wangyan/.mediaorchard \
   --shared-root /Volumes/MediaOrchard \
-  --python /opt/homebrew/bin/python3.13 \
+  --python /opt/homebrew/bin/python3.14 \
   --wheel "$wheel"
 ```
 
-`worker-bootstrap` prints the per-target shell script by default. With `--wheel`, copy the built wheel to the target path shown in the dry-run output before adding `--execute`; for example:
+`worker-bootstrap` prints the per-target shell script by default. Review the dry-run first, confirm the target Python exists, and make sure the shared root is mounted or otherwise writable on every target. For `/Volumes/MediaOrchard`, prepare the mount point before bootstrap; a normal macOS user usually cannot create new top-level directories directly under `/Volumes`.
+
+After reviewing the script, add `--copy-wheel --execute` to copy the local wheel into each target's package directory before the remote bootstrap script runs:
 
 ```bash
-ssh wangyan@192.168.50.8 'mkdir -p /Users/wangyan/.mediaorchard/packages'
-scp "$wheel" wangyan@192.168.50.8:/Users/wangyan/.mediaorchard/packages/
+mediaorchard doctor worker-bootstrap \
+  --target wangyan@192.168.50.8 \
+  --target wangyan@192.168.50.9 \
+  --install-root /Users/wangyan/.mediaorchard \
+  --shared-root /Volumes/MediaOrchard \
+  --python /opt/homebrew/bin/python3.14 \
+  --wheel "$wheel" \
+  --copy-wheel \
+  --execute
 ```
 
-Add `--execute` only after reviewing the script, copying the wheel when needed, and confirming the target Python exists. `--wheel` and a custom `--package-spec` are mutually exclusive. The bootstrap creates a per-user virtual environment, installs MediaOrchard and the whisper backend, creates the shared-root layout, and verifies `ffmpeg`, `ffprobe`, `mlx_whisper`, and `mediaorchard --help`.
+Without `--copy-wheel`, copy the built wheel to the target path shown in the dry-run output before adding `--execute`. `--wheel` and a custom `--package-spec` are mutually exclusive. `--copy-wheel` requires `--wheel`. The bootstrap creates a per-user virtual environment, installs MediaOrchard and the whisper backend, creates the shared-root layout under an already usable shared root, and verifies `ffmpeg`, `ffprobe`, `mlx_whisper`, and `mediaorchard --help`.
 
 Single-machine real-media CLI demo:
 

@@ -2,6 +2,7 @@ from typer.testing import CliRunner
 
 from mediaorchard.cli import main as cli_main
 from mediaorchard.cli.main import app
+from mediaorchard.worker.bootstrap import WorkerBootstrapResult
 from mediaorchard.worker.preflight import PreflightCheck, WorkerPreflightResult
 
 
@@ -346,3 +347,48 @@ def test_doctor_worker_bootstrap_rejects_wheel_with_custom_package_spec(tmp_path
 
     assert result.exit_code != 0
     assert "--package-spec cannot be combined with --wheel" in result.output
+
+
+def test_doctor_worker_bootstrap_execute_can_copy_local_wheel(monkeypatch, tmp_path):
+    wheel = tmp_path / "mediaorchard-0.1.0-py3-none-any.whl"
+    wheel.write_text("placeholder")
+    calls = []
+
+    def fake_bootstrap(config, *, execute):
+        calls.append((config, execute))
+        return WorkerBootstrapResult(target=config.target, executed=execute, script="script", stdout="ready\n")
+
+    monkeypatch.setattr(cli_main, "run_worker_bootstrap", fake_bootstrap)
+    result = CliRunner().invoke(
+        app,
+        [
+            "doctor",
+            "worker-bootstrap",
+            "--target",
+            "wangyan@192.168.50.8",
+            "--wheel",
+            str(wheel),
+            "--copy-wheel",
+            "--execute",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "wangyan@192.168.50.8 PASS" in result.output
+    assert calls[0][0].package_wheel == wheel
+    assert calls[0][0].copy_wheel is True
+    assert calls[0][1] is True
+
+
+def test_doctor_worker_bootstrap_rejects_copy_wheel_without_wheel():
+    result = CliRunner().invoke(
+        app,
+        [
+            "doctor",
+            "worker-bootstrap",
+            "--copy-wheel",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "--copy-wheel requires --wheel" in result.output
