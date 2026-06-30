@@ -42,3 +42,4 @@
 - Installed `mlx-whisper` 0.4.3 into the local project `.venv` and verified `.venv/bin/python -m pip check`, `import mlx_whisper`, `mediaorchard --help`, and `bash scripts/smoke.sh`.
 - Re-ran `bash scripts/release_env_check.sh` on `main`; it remains a read-only failing gate with exit code `1` until remote Worker venvs and `/Volumes/MediaOrchard` are prepared, while local `.venv/bin/python` now passes the `mlx_whisper` check.
 - Ran read-only Worker preflight after local venv preparation: local `.venv` now has `mlx_whisper` 0.4.3; both remotes still lack the per-user Worker venv; all targets still lack `/Volumes/MediaOrchard`.
+- Verified `bash scripts/verify.sh` and `bash scripts/release_check.sh` on `main` after adding the local venv evidence guard: harness check, 126 passing tests, CLI smoke, `sdist`/wheel build, `twine check`, clean wheel install smoke, and tracked-file hygiene guard all pass.
