@@ -86,6 +86,14 @@ def test_worker_start_invokes_runtime_once(monkeypatch, tmp_path):
             "secret",
             "--shared-root",
             str(tmp_path),
+            "--execution-mode",
+            "real",
+            "--python",
+            "python3.11",
+            "--whisper-model",
+            "mlx-community/whisper-small",
+            "--tool-timeout-seconds",
+            "77",
             "--once",
         ],
     )
@@ -96,6 +104,10 @@ def test_worker_start_invokes_runtime_once(monkeypatch, tmp_path):
     assert calls[0].node_id == "mac-studio"
     assert calls[0].node_name == "Mac Studio"
     assert calls[0].poll_once is True
+    assert calls[0].execution_mode == "real"
+    assert calls[0].python_executable == "python3.11"
+    assert calls[0].whisper_model == "mlx-community/whisper-small"
+    assert calls[0].tool_timeout_seconds == 77
 
 
 def test_nodes_lists_controller_nodes(monkeypatch):

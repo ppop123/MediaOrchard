@@ -19,6 +19,17 @@ class RealMediaSmokeResult:
     quality_report: dict[str, Any]
 
 
+@dataclass(frozen=True)
+class RealMediaPipelineResult:
+    status: str
+    steps: list[str]
+    output_dir: Path
+    work_dir: Path
+    transcript_text: str
+    quality_report: dict[str, Any]
+    error_message: str | None = None
+
+
 def format_srt_timestamp(seconds: float) -> str:
     milliseconds = int(round(seconds * 1000))
     hours, remainder = divmod(milliseconds, 3_600_000)
@@ -209,6 +220,122 @@ def run_real_media_smoke(
     )
 
 
+def run_real_video_to_subtitle_pipeline(
+    *,
+    input_file: str | Path,
+    output_dir: str | Path,
+    work_dir: str | Path,
+    requested_outputs: list[str],
+    language: str | None,
+    job_id: str,
+    python_executable: str = "python3",
+    whisper_model: str = "mlx-community/whisper-tiny",
+    timeout_seconds: int = 120,
+) -> RealMediaPipelineResult:
+    unsupported = sorted(set(requested_outputs) - {"srt", "txt", "json"})
+    if unsupported:
+        raise RealMediaSmokeError(f"unsupported outputs: {', '.join(unsupported)}")
+
+    source = Path(input_file).expanduser().resolve(strict=False)
+    if not source.exists():
+        raise RealMediaSmokeError(f"input does not exist: {source}")
+
+    output_path = Path(output_dir)
+    work_path = Path(work_dir)
+    logs_dir = output_path / "logs"
+    output_path.mkdir(parents=True, exist_ok=True)
+    work_path.mkdir(parents=True, exist_ok=True)
+    logs_dir.mkdir(parents=True, exist_ok=True)
+
+    audio_wav = output_path / "audio.wav"
+    probe = _run_command(
+        "ffprobe",
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-print_format",
+            "json",
+            "-show_format",
+            "-show_streams",
+            str(source),
+        ],
+        logs_dir,
+        timeout_seconds,
+    )
+    _write_text(output_path / "input_meta.json", probe.stdout)
+    _run_command(
+        "ffmpeg_extract_audio",
+        [
+            "ffmpeg",
+            "-y",
+            "-i",
+            str(source),
+            "-vn",
+            "-ac",
+            "1",
+            "-ar",
+            "16000",
+            str(audio_wav),
+        ],
+        logs_dir,
+        timeout_seconds,
+    )
+
+    raw_transcript_json = work_path / "whisper_result.json"
+    _run_command(
+        "mlx_whisper",
+        [
+            python_executable,
+            "-c",
+            _TRANSCRIBE_CODE,
+            str(audio_wav),
+            str(raw_transcript_json),
+            whisper_model,
+            language or "auto",
+        ],
+        logs_dir,
+        timeout_seconds,
+    )
+
+    transcript_payload = json.loads(raw_transcript_json.read_text())
+    transcript_text = (transcript_payload.get("text") or "").strip()
+    segments = transcript_payload.get("segments") or [
+        {"start": 0.0, "end": 1.0, "text": transcript_text}
+    ]
+    _write_text(output_path / "transcript.txt", transcript_text + "\n")
+    _write_json(
+        output_path / "transcript.json",
+        {
+            "text": transcript_text,
+            "segments": segments,
+            "model": whisper_model,
+        },
+    )
+    _write_text(output_path / "subtitle.srt", _segments_to_srt(segments))
+
+    quality_report = build_quality_report(output_path)
+    write_human_report(
+        output_dir=output_path,
+        job_id=job_id,
+        input_name=source.name,
+        transcript_text=transcript_text,
+        model=whisper_model,
+        quality_report=quality_report,
+    )
+    if quality_report["status"] != "passed":
+        raise RealMediaSmokeError(f"quality report failed: {quality_report['checks']}")
+
+    return RealMediaPipelineResult(
+        status="completed",
+        steps=["ffprobe", "ffmpeg_extract_audio", "mlx_whisper"],
+        output_dir=output_path,
+        work_dir=work_path,
+        transcript_text=transcript_text,
+        quality_report=quality_report,
+    )
+
+
 def _run_command(
     name: str,
     argv: list[str],
@@ -275,12 +402,15 @@ import json
 import sys
 import mlx_whisper
 
-audio_path, output_path, model = sys.argv[1:]
+audio_path, output_path, model = sys.argv[1:4]
+language = sys.argv[4] if len(sys.argv) > 4 else "en"
+if language == "auto":
+    language = None
 result = mlx_whisper.transcribe(
     audio_path,
     path_or_hf_repo=model,
     verbose=False,
-    language="en",
+    language=language,
 )
 with open(output_path, "w") as f:
     json.dump(result, f, indent=2)

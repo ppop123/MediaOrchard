@@ -85,9 +85,15 @@ def worker_start(
     once: bool = typer.Option(False, "--once"),
     max_polls: int | None = typer.Option(None, "--max-polls"),
     claim_interval_seconds: float = typer.Option(2.0, "--claim-interval-seconds", min=0.1),
+    execution_mode: str = typer.Option("deterministic", "--execution-mode"),
+    python_executable: str = typer.Option("python3", "--python"),
+    whisper_model: str = typer.Option("mlx-community/whisper-tiny", "--whisper-model"),
+    tool_timeout_seconds: int = typer.Option(120, "--tool-timeout-seconds", min=1),
 ) -> None:
     """Start a Worker agent."""
     raw_api_key = _require_api_key(api_key)
+    if execution_mode not in {"deterministic", "real"}:
+        raise typer.BadParameter("execution-mode must be deterministic or real")
 
     typer.echo(f"Starting Worker {node_id}")
     claimed = run_worker(
@@ -102,6 +108,10 @@ def worker_start(
             poll_once=once,
             max_polls=max_polls,
             claim_interval_seconds=claim_interval_seconds,
+            execution_mode=execution_mode,
+            python_executable=python_executable,
+            whisper_model=whisper_model,
+            tool_timeout_seconds=tool_timeout_seconds,
         )
     )
     if once or max_polls is not None:

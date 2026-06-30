@@ -963,7 +963,7 @@ Create: tests/test_scheduler.py
 
 ### Milestone 5: Worker Runtime And Tools
 
-**Status:** WorkerAgent registration, heartbeat, assigned-step claim, start/complete/fail reporting, shutdown interruption reporting, live metrics collection, structured command execution, deterministic pipeline artifacts, and local real-media smoke coverage are implemented. Worker-orchestrated real `ffmpeg`/`mlx_whisper` multi-step execution is still a hardening item.
+**Status:** WorkerAgent registration, heartbeat, assigned-step claim, start/complete/fail reporting, shutdown interruption reporting, live metrics collection, structured command execution, deterministic pipeline artifacts, local real-media smoke coverage, and single-machine Worker real-media execution are implemented. Multi-Mac real-media execution is still blocked on target Worker environment readiness and validation.
 
 **Files:**
 
@@ -989,7 +989,7 @@ Create: tests/test_worker_lifecycle.py
 
 ### Milestone 6: CLI End-To-End Demo
 
-**Status:** `controller start`, `worker start`, `submit`, `jobs`, and `nodes` are implemented. A process-level single-machine CLI E2E smoke can submit a `video_to_subtitle` job, run one Worker poll, complete the deterministic pipeline, list completed job state, and verify release-shaped artifacts. `job`, `cancel`, `retry`, and JSON output modes remain post-demo hardening.
+**Status:** `controller start`, `worker start`, `submit`, `jobs`, and `nodes` are implemented. Process-level single-machine CLI E2E smoke can submit a `video_to_subtitle` job, run one Worker poll, complete either the deterministic pipeline or real-media mode, list completed job state, and verify release-shaped artifacts. `job`, `cancel`, `retry`, and JSON output modes remain post-demo hardening.
 
 **Files:**
 

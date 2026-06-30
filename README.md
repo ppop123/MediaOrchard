@@ -17,11 +17,12 @@ Implemented foundations:
 - Typer CLI for starting the Controller, starting a Worker, submitting jobs, and listing jobs/nodes.
 - Structured Worker command execution with `list[str]` argv, `shell=False`, timeout handling, and stdout/stderr logs.
 - Deterministic `video_to_subtitle` pipeline demo that produces release-shaped artifacts without real media tools.
-- Local real-media smoke path that verifies `say`, `ffmpeg`, `ffprobe`, and `mlx_whisper` can produce transcript and subtitle artifacts.
+- Worker `--execution-mode real` path that uses `ffprobe`, `ffmpeg`, and `mlx_whisper` to produce transcript and subtitle artifacts from submitted media.
+- Local real-media smoke path that verifies `say`, `ffmpeg`, `ffprobe`, and `mlx_whisper`.
 
 Known MVP boundaries:
 
-- The CLI end-to-end Worker path currently runs the deterministic pipeline demo. Worker-orchestrated real `ffmpeg`/`mlx_whisper` multi-step execution is still hardening; use `scripts/real_media_smoke.py` to verify the real media toolchain on a Mac.
+- The default Worker mode is deterministic for fast smoke tests. Use `--execution-mode real` only on a Mac with the real media toolchain installed.
 - Multi-Mac real-media execution requires each target Worker to have Python 3.11+, `ffmpeg`, `ffprobe`, the whisper backend, and the same resolved shared root mounted.
 
 ## Requirements
@@ -219,6 +220,55 @@ $smoke_root/output/real_smoke/
   logs/
 ```
 
+Single-machine real-media CLI demo:
+
+```bash
+real_root="$(mktemp -d /tmp/mediaorchard-real-cli.XXXXXX)"
+mkdir -p "$real_root"/{inbox,work,output,logs,cache}
+echo "real_root=$real_root"
+say -v Samantha -o "$real_root/work/speech.aiff" 'hello media orchard real worker test'
+ffmpeg -y \
+  -f lavfi -i color=c=black:s=320x240:d=4 \
+  -i "$real_root/work/speech.aiff" \
+  -shortest -c:v libx264 -pix_fmt yuv420p -c:a aac \
+  "$real_root/inbox/demo.mp4"
+
+export MEDIAORCHARD_API_KEY='replace-me'
+export MEDIAORCHARD_API_KEY_HASH="$(
+  .venv/bin/python -c 'from mediaorchard.shared.security import hash_api_key; print(hash_api_key("replace-me"))'
+)"
+export MEDIAORCHARD_SHARED_ROOT="$real_root"
+export MEDIAORCHARD_DATABASE_URL="sqlite:///$real_root/controller.db"
+
+mediaorchard controller start --host 127.0.0.1 --port 8765
+```
+
+In a second terminal, set `real_root` to the printed path and run:
+
+```bash
+real_root=/tmp/mediaorchard-real-cli.XXXXXX
+export MEDIAORCHARD_API_KEY='replace-me'
+mediaorchard submit "$real_root/inbox/demo.mp4" \
+  --controller-url http://127.0.0.1:8765 \
+  --goal video_to_subtitle \
+  --output srt \
+  --output txt \
+  --output json \
+  --language en
+
+mediaorchard worker start \
+  --node-id local-real \
+  --controller-url http://127.0.0.1:8765 \
+  --shared-root "$real_root" \
+  --execution-mode real \
+  --python python3 \
+  --whisper-model mlx-community/whisper-tiny \
+  --tool-timeout-seconds 180 \
+  --once
+
+mediaorchard jobs --controller-url http://127.0.0.1:8765
+```
+
 ## Verification
 
 Routine local verification:
@@ -235,6 +285,7 @@ Focused checks:
 .venv/bin/pytest tests/test_scheduler.py -q
 .venv/bin/pytest tests/test_worker_lifecycle.py -q
 .venv/bin/pytest tests/test_tool_execution.py tests/test_mock_pipeline.py -q
+.venv/bin/pytest tests/test_real_media_smoke.py -q
 .venv/bin/pytest tests/test_db_persistence.py -q
 ```
 

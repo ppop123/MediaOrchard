@@ -15,6 +15,7 @@ import uvicorn
 
 from mediaorchard.worker.agent import WorkerAgent, WorkerTransport
 from mediaorchard.worker.mock_pipeline import run_mock_video_to_subtitle_pipeline
+from mediaorchard.worker.real_media_smoke import run_real_video_to_subtitle_pipeline
 
 
 @dataclass(frozen=True)
@@ -41,6 +42,10 @@ class WorkerRuntimeConfig:
     max_polls: int | None = None
     claim_interval_seconds: float = 2.0
     execute_claimed_steps: bool = True
+    execution_mode: str = "deterministic"
+    python_executable: str = "python3"
+    whisper_model: str = "mlx-community/whisper-tiny"
+    tool_timeout_seconds: int = 120
 
 
 StepRunner = Callable[[dict[str, Any], WorkerRuntimeConfig], dict[str, Any]]
@@ -243,14 +248,27 @@ def run_claimed_pipeline_step(step: dict[str, Any], config: WorkerRuntimeConfig)
     if not isinstance(requested_outputs, list) or any(not isinstance(item, str) for item in requested_outputs):
         raise RuntimeError("claimed step requested_outputs must be list[str]")
 
-    result = run_mock_video_to_subtitle_pipeline(
-        input_file=_required_json_str(input_json, "input_file"),
-        output_dir=_required_json_str(input_json, "output_dir"),
-        work_dir=_required_json_str(input_json, "work_dir"),
-        requested_outputs=requested_outputs,
-        language=input_json.get("language") if isinstance(input_json.get("language"), str) else None,
-        job_id=_required_step_str(step, "job_id"),
-    )
+    pipeline = run_real_video_to_subtitle_pipeline if config.execution_mode == "real" else run_mock_video_to_subtitle_pipeline
+    kwargs = {
+        "input_file": _required_json_str(input_json, "input_file"),
+        "output_dir": _required_json_str(input_json, "output_dir"),
+        "work_dir": _required_json_str(input_json, "work_dir"),
+        "requested_outputs": requested_outputs,
+        "language": input_json.get("language") if isinstance(input_json.get("language"), str) else None,
+        "job_id": _required_step_str(step, "job_id"),
+    }
+    if config.execution_mode == "real":
+        kwargs.update(
+            {
+                "python_executable": config.python_executable,
+                "whisper_model": config.whisper_model,
+                "timeout_seconds": config.tool_timeout_seconds,
+            }
+        )
+    elif config.execution_mode != "deterministic":
+        raise RuntimeError(f"unsupported execution mode: {config.execution_mode}")
+
+    result = pipeline(**kwargs)
     if result.status != "completed":
         return {
             "status": "failed",
@@ -265,6 +283,7 @@ def run_claimed_pipeline_step(step: dict[str, Any], config: WorkerRuntimeConfig)
         "output_dir": str(result.output_dir),
         "work_dir": str(result.work_dir),
         "node_id": config.node_id,
+        "quality_report": getattr(result, "quality_report", None),
     }
 
 

@@ -13,15 +13,17 @@ This project is not ready for public release until every required gate below has
 - [x] Mock `video_to_subtitle` pipeline completes without real media tools.
 - [x] CLI can start a Controller, submit a job, run one Worker poll, complete the deterministic pipeline, and list completed job/node state.
 - [x] Local real-media smoke test produces `srt`, `txt`, `json`, `quality_report.json`, `report.md`, and logs.
+- [x] CLI can run one Worker poll in real media mode and produce `srt`, `txt`, `json`, `quality_report.json`, `report.md`, and logs from submitted media.
 - [x] README documents setup, config, API key hashing, demo commands, and troubleshooting.
 - [x] `bash scripts/verify.sh` and `bash scripts/smoke.sh` pass from a clean checkout.
 - [x] No secrets, source media, cache files, generated outputs, or local databases are tracked by Git.
 
 ## Current Evidence
 
-- `bash scripts/verify.sh`: harness check plus 92 tests pass on `main`.
+- `bash scripts/verify.sh`: harness check plus 94 tests pass on `feature/real-worker-media`.
 - `bash scripts/smoke.sh`: CLI help renders successfully.
 - Process-level CLI E2E smoke passed on `main` from a temp shared root at `/tmp/mediaorchard-main-cli-e2e.GldT3h/output/job_027f3f57c6f2`: `controller start`, `submit`, `worker start --once`, `jobs`, and artifact checks for `subtitle.srt`, `transcript.txt`, `transcript.json`, and `quality_report.json`.
+- Process-level real-media CLI E2E smoke passed on `feature/real-worker-media` from `/tmp/mediaorchard-real-cli-e2e.OfiT2z/output/job_b2643ea1001c`: generated an input mp4 with `say` and `ffmpeg`, then ran `controller start`, `submit`, `worker start --execution-mode real --once`, `jobs`, and artifact checks for `input_meta.json`, `audio.wav`, `subtitle.srt`, `transcript.txt`, `transcript.json`, `quality_report.json`, `report.md`, and passed quality status.
 - Git repository initialized on `main`.
 - Controller API and state machine tests are merged into `main`.
 - Scheduler hard filters, scoring, assignment helper, active-count updates, and defensive scheduling checks are merged into `main`.
@@ -37,4 +39,4 @@ This project is not ready for public release until every required gate below has
 
 ## Current Release Status
 
-Single-Mac release candidate for the deterministic pipeline demo. The code now has current evidence for Controller/Worker CLI orchestration, durable state, scheduling, and local artifact generation. Do not promise multi-Mac real-media execution publicly until the target Workers have Python 3.11+, `ffmpeg`, `ffprobe`, a working whisper backend, and the shared root mounted at the same resolved path.
+Single-Mac release candidate for real-media CLI execution. The code now has current evidence for Controller/Worker CLI orchestration, durable state, scheduling, deterministic smoke mode, and one local real-media Worker run through `ffprobe`, `ffmpeg`, and `mlx_whisper`. Do not promise multi-Mac real-media execution publicly until the target Workers have Python 3.11+, `ffmpeg`, `ffprobe`, a working whisper backend, and the shared root mounted at the same resolved path.

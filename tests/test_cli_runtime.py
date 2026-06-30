@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 from starlette.testclient import TestClient
 
@@ -353,3 +354,63 @@ def test_run_worker_executes_submitted_pipeline_job_with_controller_api(tmp_path
     assert (output_dir / "subtitle.srt").is_file()
     assert (output_dir / "transcript.txt").is_file()
     assert (output_dir / "quality_report.json").is_file()
+
+
+def test_run_claimed_pipeline_step_uses_real_media_pipeline(monkeypatch, tmp_path):
+    calls = []
+
+    def fake_real_pipeline(**kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(
+            status="completed",
+            steps=["custom-real-step"],
+            error_message=None,
+            output_dir=Path(kwargs["output_dir"]),
+            work_dir=Path(kwargs["work_dir"]),
+            transcript_text="hello media orchard",
+            quality_report={"status": "passed"},
+        )
+
+    monkeypatch.setattr(cli_runtime, "run_real_video_to_subtitle_pipeline", fake_real_pipeline)
+    step = {
+        "id": "step_1",
+        "job_id": "job_1",
+        "tool_name": "video_to_subtitle_pipeline",
+        "input_json": {
+            "input_file": str(tmp_path / "inbox" / "demo.mp4"),
+            "output_dir": str(tmp_path / "output" / "job_1"),
+            "work_dir": str(tmp_path / "work" / "job_1"),
+            "requested_outputs": ["srt", "txt", "json"],
+            "language": "zh",
+        },
+    }
+    config = WorkerRuntimeConfig(
+        node_id="mac-studio",
+        node_name="Mac Studio",
+        shared_root=tmp_path,
+        controller_url="http://testserver",
+        api_key="secret",
+        execution_mode="real",
+        python_executable="python3.11",
+        whisper_model="mlx-community/whisper-small",
+        tool_timeout_seconds=77,
+    )
+
+    output = cli_runtime.run_claimed_pipeline_step(step, config)
+
+    assert output["status"] == "completed"
+    assert output["quality_report"] == {"status": "passed"}
+    assert output["pipeline_steps"] == ["custom-real-step"]
+    assert calls == [
+        {
+            "input_file": str(tmp_path / "inbox" / "demo.mp4"),
+            "output_dir": str(tmp_path / "output" / "job_1"),
+            "work_dir": str(tmp_path / "work" / "job_1"),
+            "requested_outputs": ["srt", "txt", "json"],
+            "language": "zh",
+            "job_id": "job_1",
+            "python_executable": "python3.11",
+            "whisper_model": "mlx-community/whisper-small",
+            "timeout_seconds": 77,
+        }
+    ]
