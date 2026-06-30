@@ -212,3 +212,18 @@ def test_release_env_check_script_allows_empty_target_groups(tmp_path):
 
     assert result.returncode == 0
     assert not calls_log.exists()
+
+
+def test_release_runbook_documents_public_release_gates():
+    runbook = ROOT / "RELEASE.md"
+
+    assert runbook.exists()
+    text = runbook.read_text()
+    assert "bash scripts/release_check.sh" in text
+    assert "bash scripts/release_env_check.sh" in text
+    assert "mediaorchard doctor worker-bootstrap" in text
+    assert "--copy-wheel" in text
+    assert "--execute" in text
+    assert "explicit confirmation" in text
+    assert "Do not claim multi-machine real-media execution" in text
+    assert "/Volumes/MediaOrchard" in text

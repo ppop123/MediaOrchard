@@ -333,6 +333,8 @@ bash scripts/release_check.sh
 
 Run this after the setup commands above. `release_check.sh` runs the harness check, test suite, CLI smoke, package build for `sdist` and wheel, `twine check`, a clean wheel install smoke in a temporary virtual environment, and a tracked-file hygiene guard for local artifacts, secrets, databases, and media files.
 
+For release decisions and the exact multi-machine promotion boundary, use [RELEASE.md](RELEASE.md).
+
 Multi-machine release environment check:
 
 ```bash
