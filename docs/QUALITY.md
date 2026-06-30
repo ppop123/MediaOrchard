@@ -20,6 +20,7 @@
 - Worker real-media mode covers submitted job claim, `ffprobe` metadata, `ffmpeg` audio extraction, `mlx_whisper` transcription, Controller completion reporting, and release-shaped artifact generation.
 - Worker preflight covers local and SSH target checks for runtime Python, `ffmpeg`, `ffprobe`, `mlx_whisper`, shared root readiness, and command timeout reporting.
 - Worker bootstrap covers dry-run generation and optional execution wrapping for local or SSH target virtualenv setup.
+- Worker bootstrap supports wheel-based package sources so target setup can use the exact built release artifact.
 - Worker command execution rejects unknown tools, rejects missing inputs, rejects non-`list[str]` argv, calls subprocess with `shell=False` and a bounded timeout, records timeout output, and records stdout/stderr logs, log-write failures, and failed exit codes.
 - Mock `video_to_subtitle` pipeline completes without real media tools and produces transcript, subtitle, quality report, human report, and per-step logs.
 - Database persistence coverage verifies Node, Job, Plan, Step, ToolCall, AgentDecision, and QualityReport records across sessions, including UTC datetime round-trips.
@@ -30,6 +31,7 @@
 - Process-level CLI E2E smoke verified `controller start`, `submit`, `worker start --once`, `jobs`, and expected artifact files from a temp shared root in both deterministic and real-media modes.
 - Read-only Worker preflight verified the current local and SSH target readiness state without modifying remote machines.
 - Worker bootstrap dry-run produces auditable target setup commands before any remote machine is modified.
+- Wheel-based bootstrap dry-run documents the target package path that must exist before `--execute`.
 - Release metadata coverage verifies explicit MIT license text, release build tooling in the dev extra, and executable release check script.
 - Release check builds `sdist` and wheel artifacts in an isolated build directory, validates them with `twine check`, installs the wheel into a temporary virtual environment, and checks for tracked local artifacts, secrets, databases, and media files.
 

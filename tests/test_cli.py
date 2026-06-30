@@ -286,3 +286,63 @@ def test_doctor_worker_bootstrap_defaults_to_dry_run():
     assert "wangyan@192.168.50.8 DRY-RUN" in result.output
     assert "/opt/homebrew/bin/python3.13 -m venv /Users/wangyan/.mediaorchard/venv" in result.output
     assert "mediaorchard==0.1.0" in result.output
+
+
+def test_doctor_worker_bootstrap_accepts_local_wheel(tmp_path):
+    wheel = tmp_path / "mediaorchard-0.1.0-py3-none-any.whl"
+    wheel.write_text("placeholder")
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "doctor",
+            "worker-bootstrap",
+            "--target",
+            "wangyan@192.168.50.8",
+            "--install-root",
+            "/Users/wangyan/.mediaorchard",
+            "--wheel",
+            str(wheel),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "wangyan@192.168.50.8 DRY-RUN" in result.output
+    assert "mediaorchard==0.1.0" not in result.output
+    assert f"# Copy {wheel} to /Users/wangyan/.mediaorchard/packages/mediaorchard-0.1.0-py3-none-any.whl before --execute." in result.output
+    assert "/Users/wangyan/.mediaorchard/packages/mediaorchard-0.1.0-py3-none-any.whl" in result.output
+
+
+def test_doctor_worker_bootstrap_rejects_missing_local_wheel(tmp_path):
+    result = CliRunner().invoke(
+        app,
+        [
+            "doctor",
+            "worker-bootstrap",
+            "--wheel",
+            str(tmp_path / "missing.whl"),
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "wheel does not exist" in result.output
+
+
+def test_doctor_worker_bootstrap_rejects_wheel_with_custom_package_spec(tmp_path):
+    wheel = tmp_path / "mediaorchard-0.1.0-py3-none-any.whl"
+    wheel.write_text("placeholder")
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "doctor",
+            "worker-bootstrap",
+            "--wheel",
+            str(wheel),
+            "--package-spec",
+            "mediaorchard @ git+https://example.invalid/repo.git",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "--package-spec cannot be combined with --wheel" in result.output

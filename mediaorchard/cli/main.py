@@ -14,7 +14,7 @@ from mediaorchard.cli.runtime import (
     run_worker,
     submit_job,
 )
-from mediaorchard.worker.bootstrap import WorkerBootstrapConfig, run_worker_bootstrap
+from mediaorchard.worker.bootstrap import DEFAULT_PACKAGE_SPEC, WorkerBootstrapConfig, run_worker_bootstrap
 from mediaorchard.worker.preflight import WorkerPreflightConfig, run_worker_preflight
 
 app = typer.Typer(
@@ -261,12 +261,17 @@ def doctor_worker_bootstrap(
     install_root: Path = typer.Option(Path("~/.mediaorchard"), "--install-root"),
     shared_root: Path = typer.Option(Path("/Volumes/MediaOrchard"), "--shared-root"),
     python_executable: str = typer.Option("python3", "--python"),
-    package_spec: str = typer.Option("mediaorchard==0.1.0", "--package-spec"),
+    package_spec: str = typer.Option(DEFAULT_PACKAGE_SPEC, "--package-spec"),
+    package_wheel: Path | None = typer.Option(None, "--wheel"),
     whisper_package: str = typer.Option("mlx-whisper", "--whisper-package"),
     execute: bool = typer.Option(False, "--execute"),
     timeout_seconds: int = typer.Option(300, "--timeout-seconds", min=1),
 ) -> None:
     """Print or execute Worker environment bootstrap commands."""
+    if package_wheel is not None and not package_wheel.expanduser().exists():
+        raise typer.BadParameter("wheel does not exist")
+    if package_wheel is not None and package_spec != DEFAULT_PACKAGE_SPEC:
+        raise typer.BadParameter("--package-spec cannot be combined with --wheel")
     target_values = targets or ["local"]
     results = [
         run_worker_bootstrap(
@@ -276,6 +281,7 @@ def doctor_worker_bootstrap(
                 shared_root=shared_root,
                 python_executable=python_executable,
                 package_spec=package_spec,
+                package_wheel=package_wheel,
                 whisper_package=whisper_package,
                 timeout_seconds=timeout_seconds,
             ),

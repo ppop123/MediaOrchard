@@ -238,16 +238,25 @@ The command is read-only. It checks the Python version used to run the Worker, `
 Worker bootstrap dry-run:
 
 ```bash
+.venv/bin/python -m build --wheel --outdir dist
+wheel="$(ls dist/mediaorchard-0.1.0-py3-none-any.whl)"
 mediaorchard doctor worker-bootstrap \
   --target wangyan@192.168.50.8 \
   --target wangyan@192.168.50.9 \
   --install-root /Users/wangyan/.mediaorchard \
   --shared-root /Volumes/MediaOrchard \
   --python /opt/homebrew/bin/python3.13 \
-  --package-spec mediaorchard==0.1.0
+  --wheel "$wheel"
 ```
 
-`worker-bootstrap` prints the per-target shell script by default. Add `--execute` only after reviewing the script and confirming the target Python exists. The bootstrap creates a per-user virtual environment, installs MediaOrchard and the whisper backend, creates the shared-root layout, and verifies `ffmpeg`, `ffprobe`, `mlx_whisper`, and `mediaorchard --help`.
+`worker-bootstrap` prints the per-target shell script by default. With `--wheel`, copy the built wheel to the target path shown in the dry-run output before adding `--execute`; for example:
+
+```bash
+ssh wangyan@192.168.50.8 'mkdir -p /Users/wangyan/.mediaorchard/packages'
+scp "$wheel" wangyan@192.168.50.8:/Users/wangyan/.mediaorchard/packages/
+```
+
+Add `--execute` only after reviewing the script, copying the wheel when needed, and confirming the target Python exists. `--wheel` and a custom `--package-spec` are mutually exclusive. The bootstrap creates a per-user virtual environment, installs MediaOrchard and the whisper backend, creates the shared-root layout, and verifies `ffmpeg`, `ffprobe`, `mlx_whisper`, and `mediaorchard --help`.
 
 Single-machine real-media CLI demo:
 

@@ -21,6 +21,7 @@
 - Target Workers do not need system Python changes for MVP if each machine gets a per-user MediaOrchard virtual environment with Python 3.11+ and the whisper backend.
 - Missing Worker directories and programs may be prepared through an explicit bootstrap step: create the shared root layout on each target and install or copy required tools such as Python, `ffmpeg`, `ffprobe`, and `mlx_whisper` before enabling multi-Mac real-media scheduling.
 - Worker bootstrap should be dry-run first because it creates directories and installs packages on local or SSH targets; execution requires explicit `--execute`.
+- Until MediaOrchard is published to an index, Worker bootstrap should use `--wheel` with a locally built release wheel copied to each target's install root.
 
 ## Release Packaging Findings
 

@@ -36,6 +36,23 @@ def test_build_bootstrap_script_sets_up_venv_shared_root_and_checks_tools():
     assert "/Users/wangyan/.mediaorchard/venv/bin/mediaorchard --help >/dev/null" in script
 
 
+def test_build_bootstrap_script_can_install_from_local_wheel():
+    script = build_bootstrap_script(
+        WorkerBootstrapConfig(
+            target="wangyan@192.168.50.8",
+            install_root=Path("/Users/wangyan/.mediaorchard"),
+            package_wheel=Path("/tmp/dist/mediaorchard-0.1.0-py3-none-any.whl"),
+            whisper_package="mlx-whisper",
+        )
+    )
+
+    assert "mediaorchard==0.1.0" not in script
+    assert "# Copy /tmp/dist/mediaorchard-0.1.0-py3-none-any.whl to /Users/wangyan/.mediaorchard/packages/mediaorchard-0.1.0-py3-none-any.whl before --execute." in script
+    assert "/Users/wangyan/.mediaorchard/packages/mediaorchard-0.1.0-py3-none-any.whl" in script
+    assert "test -f /Users/wangyan/.mediaorchard/packages/mediaorchard-0.1.0-py3-none-any.whl" in script
+    assert "/Users/wangyan/.mediaorchard/venv/bin/python -m pip install /Users/wangyan/.mediaorchard/packages/mediaorchard-0.1.0-py3-none-any.whl mlx-whisper" in script
+
+
 def test_build_bootstrap_command_argv_wraps_remote_with_ssh():
     argv = build_bootstrap_command_argv("wangyan@192.168.50.8")
 
