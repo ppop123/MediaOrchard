@@ -235,6 +235,20 @@ mediaorchard doctor worker \
 
 The command is read-only. It checks the Python version used to run the Worker, `ffmpeg`, `ffprobe`, the Python executable used for `mlx_whisper`, and the shared root directory. It returns exit code `1` when any target is not ready.
 
+Worker bootstrap dry-run:
+
+```bash
+mediaorchard doctor worker-bootstrap \
+  --target wangyan@192.168.50.8 \
+  --target wangyan@192.168.50.9 \
+  --install-root /Users/wangyan/.mediaorchard \
+  --shared-root /Volumes/MediaOrchard \
+  --python /opt/homebrew/bin/python3.13 \
+  --package-spec mediaorchard==0.1.0
+```
+
+`worker-bootstrap` prints the per-target shell script by default. Add `--execute` only after reviewing the script and confirming the target Python exists. The bootstrap creates a per-user virtual environment, installs MediaOrchard and the whisper backend, creates the shared-root layout, and verifies `ffmpeg`, `ffprobe`, `mlx_whisper`, and `mediaorchard --help`.
+
 Single-machine real-media CLI demo:
 
 ```bash
@@ -310,6 +324,7 @@ Focused checks:
 .venv/bin/pytest tests/test_tool_execution.py tests/test_mock_pipeline.py -q
 .venv/bin/pytest tests/test_real_media_smoke.py -q
 .venv/bin/pytest tests/test_worker_preflight.py -q
+.venv/bin/pytest tests/test_worker_bootstrap.py -q
 .venv/bin/pytest tests/test_release_metadata.py -q
 .venv/bin/pytest tests/test_db_persistence.py -q
 ```

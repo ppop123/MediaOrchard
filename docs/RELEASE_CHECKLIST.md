@@ -20,12 +20,13 @@ This project is not ready for public release until every required gate below has
 - [x] Worker preflight can check local and SSH targets without modifying remote machines.
 - [x] Repository has explicit MIT license text.
 - [x] Release check builds `sdist` and wheel artifacts and validates metadata with `twine check`.
+- [x] Worker bootstrap commands can be generated in dry-run mode before any target machine is modified.
 
 ## Current Evidence
 
-- `bash scripts/verify.sh`: harness check plus 102 tests pass on `main`.
+- `bash scripts/verify.sh`: harness check plus 107 tests pass on `feature/worker-bootstrap`.
 - `bash scripts/smoke.sh`: CLI help renders successfully.
-- `bash scripts/release_check.sh`: harness check, 102 tests, CLI smoke, `python -m build`, `twine check`, clean wheel install smoke, and tracked-file hygiene guard pass on `main`.
+- `bash scripts/release_check.sh`: harness check, 107 tests, CLI smoke, `python -m build`, `twine check`, clean wheel install smoke, and tracked-file hygiene guard pass on `feature/worker-bootstrap`.
 - Process-level CLI E2E smoke passed on `main` from a temp shared root at `/tmp/mediaorchard-main-cli-e2e.GldT3h/output/job_027f3f57c6f2`: `controller start`, `submit`, `worker start --once`, `jobs`, and artifact checks for `subtitle.srt`, `transcript.txt`, `transcript.json`, and `quality_report.json`.
 - Process-level real-media CLI E2E smoke passed on `main` from `/tmp/mediaorchard-main-real-cli-e2e.B8Gvyp/output/job_825c8527e177`: generated an input mp4 with `say` and `ffmpeg`, then ran `controller start`, `submit`, `worker start --execution-mode real --once`, `jobs`, and artifact checks for `input_meta.json`, `audio.wav`, `subtitle.srt`, `transcript.txt`, `transcript.json`, `quality_report.json`, `report.md`, and passed quality status.
 - Git repository initialized on `main`.
@@ -43,7 +44,8 @@ This project is not ready for public release until every required gate below has
 - `mediaorchard doctor worker --target local --target wangyan@192.168.50.8 --target wangyan@192.168.50.9 --shared-root /Volumes/MediaOrchard --runtime-python python3 --whisper-python python3` found local system `python3` is 3.9.6, local ffmpeg/ffprobe/mlx_whisper are available, and local shared root is missing; both remotes have system `python3` 3.9.6 plus ffmpeg/ffprobe, but lack `mlx_whisper` and `/Volumes/MediaOrchard`.
 - Worker preflight timeout handling is covered by a regression test so a slow local command or SSH target is reported as a failed check instead of crashing the diagnostic run.
 - Release metadata tests verify `LICENSE`, release build tooling in the dev extra, and executable `scripts/release_check.sh` coverage for build, metadata, clean install, and hygiene gates.
+- Worker bootstrap dry-run added as `mediaorchard doctor worker-bootstrap`; it generates the per-target script for virtualenv setup, package install, shared-root directory creation, and media tool verification without modifying targets unless `--execute` is explicitly supplied.
 
 ## Current Release Status
 
-Single-Mac release candidate for real-media CLI execution. The code now has current evidence for Controller/Worker CLI orchestration, durable state, scheduling, deterministic smoke mode, one local real-media Worker run through `ffprobe`, `ffmpeg`, and `mlx_whisper`, and read-only Worker preflight diagnostics. Do not promise multi-Mac real-media execution publicly until the target Workers pass `mediaorchard doctor worker` with Python 3.11+, `ffmpeg`, `ffprobe`, a working whisper backend, and the shared root mounted at the same resolved path.
+Single-Mac release candidate for real-media CLI execution. The code now has current evidence for Controller/Worker CLI orchestration, durable state, scheduling, deterministic smoke mode, one local real-media Worker run through `ffprobe`, `ffmpeg`, and `mlx_whisper`, read-only Worker preflight diagnostics, and dry-run Worker bootstrap commands. Do not promise multi-Mac real-media execution publicly until the target Workers are bootstrapped and then pass `mediaorchard doctor worker` with Python 3.11+, `ffmpeg`, `ffprobe`, a working whisper backend, and the shared root mounted at the same resolved path.

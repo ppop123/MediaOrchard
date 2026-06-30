@@ -14,6 +14,7 @@ from mediaorchard.cli.runtime import (
     run_worker,
     submit_job,
 )
+from mediaorchard.worker.bootstrap import WorkerBootstrapConfig, run_worker_bootstrap
 from mediaorchard.worker.preflight import WorkerPreflightConfig, run_worker_preflight
 
 app = typer.Typer(
@@ -249,6 +250,50 @@ def doctor_worker(
         typer.echo(f"{result.target} {'PASS' if result.ok else 'FAIL'}")
         for check in result.checks:
             typer.echo(f"  {'PASS' if check.ok else 'FAIL'} {check.name}: {check.detail}")
+
+    if not all(result.ok for result in results):
+        raise typer.Exit(code=1)
+
+
+@doctor_app.command("worker-bootstrap")
+def doctor_worker_bootstrap(
+    targets: list[str] | None = typer.Option(None, "--target"),
+    install_root: Path = typer.Option(Path("~/.mediaorchard"), "--install-root"),
+    shared_root: Path = typer.Option(Path("/Volumes/MediaOrchard"), "--shared-root"),
+    python_executable: str = typer.Option("python3", "--python"),
+    package_spec: str = typer.Option("mediaorchard==0.1.0", "--package-spec"),
+    whisper_package: str = typer.Option("mlx-whisper", "--whisper-package"),
+    execute: bool = typer.Option(False, "--execute"),
+    timeout_seconds: int = typer.Option(300, "--timeout-seconds", min=1),
+) -> None:
+    """Print or execute Worker environment bootstrap commands."""
+    target_values = targets or ["local"]
+    results = [
+        run_worker_bootstrap(
+            WorkerBootstrapConfig(
+                target=target,
+                install_root=install_root,
+                shared_root=shared_root,
+                python_executable=python_executable,
+                package_spec=package_spec,
+                whisper_package=whisper_package,
+                timeout_seconds=timeout_seconds,
+            ),
+            execute=execute,
+        )
+        for target in target_values
+    ]
+
+    for result in results:
+        if result.executed:
+            typer.echo(f"{result.target} {'PASS' if result.ok else 'FAIL'}")
+            if result.stdout.strip():
+                typer.echo(result.stdout.strip())
+            if result.stderr.strip():
+                typer.echo(result.stderr.strip(), err=True)
+        else:
+            typer.echo(f"{result.target} DRY-RUN")
+            typer.echo(result.script)
 
     if not all(result.ok for result in results):
         raise typer.Exit(code=1)

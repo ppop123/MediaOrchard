@@ -261,3 +261,28 @@ def test_doctor_worker_reports_preflight_failures(monkeypatch, tmp_path):
     assert "wangyan@192.168.50.8 FAIL" in result.output
     assert "FAIL python>=3.11: found 3.9.6" in result.output
     assert "PASS shared_root" in result.output
+
+
+def test_doctor_worker_bootstrap_defaults_to_dry_run():
+    result = CliRunner().invoke(
+        app,
+        [
+            "doctor",
+            "worker-bootstrap",
+            "--target",
+            "wangyan@192.168.50.8",
+            "--install-root",
+            "/Users/wangyan/.mediaorchard",
+            "--shared-root",
+            "/Volumes/MediaOrchard",
+            "--python",
+            "/opt/homebrew/bin/python3.13",
+            "--package-spec",
+            "mediaorchard==0.1.0",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "wangyan@192.168.50.8 DRY-RUN" in result.output
+    assert "/opt/homebrew/bin/python3.13 -m venv /Users/wangyan/.mediaorchard/venv" in result.output
+    assert "mediaorchard==0.1.0" in result.output

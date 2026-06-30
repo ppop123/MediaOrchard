@@ -22,6 +22,7 @@
 - Earlier target Worker probes for `192.168.50.8` and `192.168.50.9` established SSH reachability and missing Python/whisper/shared-root readiness.
 - Refreshed local and target Worker probes with `mediaorchard doctor worker`: system `python3` is 3.9.6 on local and both remotes, all three resolve `ffmpeg`/`ffprobe`, remotes lack `mlx_whisper`, and all three lack `/Volumes/MediaOrchard`.
 - Added explicit MIT `LICENSE`, release metadata tests, release build tooling, and `scripts/release_check.sh`.
-- Verified `scripts/release_check.sh`: harness check, 102 passing tests, CLI smoke, `sdist`/wheel build, `twine check`, clean wheel install smoke, and tracked-file hygiene guard all pass.
+- Verified `scripts/release_check.sh`: harness check, 107 passing tests, CLI smoke, `sdist`/wheel build, `twine check`, clean wheel install smoke, and tracked-file hygiene guard all pass.
 - Confirmed next multi-Mac release-hardening path: deploy Worker runtime through per-target virtual environments, then prepare missing shared directories and media tools through an explicit bootstrap step before promising multi-Mac real-media execution.
-- Current verification target: `bash scripts/verify.sh` with 102 passing tests; `bash scripts/smoke.sh` renders CLI help; `bash scripts/release_check.sh` validates release packaging.
+- Added `mediaorchard doctor worker-bootstrap` dry-run support for local/SSH Worker virtualenv setup, package install, shared-root directory creation, and media tool verification.
+- Current verification target: `bash scripts/verify.sh` with 107 passing tests; `bash scripts/smoke.sh` renders CLI help; `bash scripts/release_check.sh` validates release packaging.
