@@ -29,20 +29,20 @@ This project is not ready for public release until every required gate below has
 
 ## Current Evidence
 
-- `bash scripts/verify.sh`: harness check plus 124 tests pass on `main`.
+- `bash scripts/verify.sh`: harness check plus 125 tests pass on `main`.
 - `bash scripts/smoke.sh`: CLI help renders successfully.
-- `bash scripts/release_check.sh`: harness check, 124 tests, CLI smoke, `python -m build`, `twine check`, clean wheel install smoke, and tracked-file hygiene guard pass on `main`.
+- `bash scripts/release_check.sh`: harness check, 125 tests, CLI smoke, `python -m build`, `twine check`, clean wheel install smoke, and tracked-file hygiene guard pass on `main`.
 - `bash scripts/release_env_check.sh`: read-only preflight plus bootstrap dry-run runs on `main` and exits `1` because the multi-machine environment is still missing local `mlx_whisper`, remote Worker venvs, and `/Volumes/MediaOrchard`.
 - Process-level CLI E2E smoke passed on `main` from a temp shared root at `/tmp/mediaorchard-main-cli-e2e.GldT3h/output/job_027f3f57c6f2`: `controller start`, `submit`, `worker start --once`, `jobs`, and artifact checks for `subtitle.srt`, `transcript.txt`, `transcript.json`, and `quality_report.json`.
 - Process-level real-media CLI E2E smoke passed on `main` from `/tmp/mediaorchard-main-real-cli-e2e.B8Gvyp/output/job_825c8527e177`: generated an input mp4 with `say` and `ffmpeg`, then ran `controller start`, `submit`, `worker start --execution-mode real --once`, `jobs`, and artifact checks for `input_meta.json`, `audio.wav`, `subtitle.srt`, `transcript.txt`, `transcript.json`, `quality_report.json`, `report.md`, and passed quality status.
 - Git repository initialized on `main`.
 - Controller API and state machine tests are merged into `main`.
 - Scheduler hard filters, scoring, assignment helper, active-count updates, and defensive scheduling checks are merged into `main`.
-- Worker lifecycle API and WorkerAgent lifecycle tests are implemented on `feature/worker-lifecycle`, including JSON `claim-next`, `claimed_at` lease marking, and `X-MediaOrchard-Node-Id` ownership checks.
-- Worker tool execution enforces registered command tools, existing input validation, structured `list[str]` argv, `shell=False`, subprocess timeout, timeout log capture, stdout/stderr log capture, log-write failure reporting, and failed exit-code reporting on `feature/tool-execution`.
-- Mock `video_to_subtitle` pipeline produces `audio.wav`, `transcript.txt`, `transcript.json`, `subtitle.srt`, `quality_report.json`, `report.md`, and per-step logs without real media tools on `feature/tool-execution`.
-- Database persistence tests verify all release models can be created, committed, and read back across sessions, including UTC datetime round-trips, on `feature/persistence-coverage`.
-- README documents setup, configuration, API key hashing, Controller CLI startup, single-machine CLI demo commands, verification commands, and troubleshooting on `feature/cli-orchestration`.
+- Worker lifecycle API and WorkerAgent lifecycle tests are merged into `main`, including JSON `claim-next`, `claimed_at` lease marking, and `X-MediaOrchard-Node-Id` ownership checks.
+- Worker tool execution is merged into `main` with registered command tools, existing input validation, structured `list[str]` argv, `shell=False`, subprocess timeout, timeout log capture, stdout/stderr log capture, log-write failure reporting, and failed exit-code reporting.
+- Mock `video_to_subtitle` pipeline is merged into `main` and produces `audio.wav`, `transcript.txt`, `transcript.json`, `subtitle.srt`, `quality_report.json`, `report.md`, and per-step logs without real media tools.
+- Database persistence tests are merged into `main` and verify all release models can be created, committed, and read back across sessions, including UTC datetime round-trips.
+- README documents setup, configuration, API key hashing, Controller CLI startup, single-machine CLI demo commands, verification commands, and troubleshooting on `main`.
 - Clean checkout verification passed from `/tmp/mediaorchard-clean-check.wcKBCH/repo` after fresh clone, new venv, editable install, `bash scripts/verify.sh` with 94 tests, and `bash scripts/smoke.sh`.
 - Git tracked-file hygiene audit found no tracked local DB files, env/config-local files, media files, cache/work/output/log directories, pyc files, or actual API key/hash patterns; placeholder `<shared-secret>` references remain documented in `plan.md`.
 - Local real-media smoke passed at `/tmp/mediaorchard-real-smoke.4Jc4aF/output/real_smoke` using macOS `say`, `ffmpeg` 7.1.1, `ffprobe` 7.1.1, system Python `mlx-whisper` 0.4.3, and model `mlx-community/whisper-tiny`; produced `subtitle.srt`, `transcript.txt`, `transcript.json`, `quality_report.json`, `report.md`, `audio.wav`, `input_meta.json`, and logs.

@@ -227,3 +227,11 @@ def test_release_runbook_documents_public_release_gates():
     assert "explicit confirmation" in text
     assert "Do not claim multi-machine real-media execution" in text
     assert "/Volumes/MediaOrchard" in text
+
+
+def test_release_checklist_current_evidence_uses_main_not_feature_branches():
+    checklist = ROOT / "docs" / "RELEASE_CHECKLIST.md"
+
+    text = checklist.read_text()
+    assert "feature/" not in text
+    assert "`main`" in text
