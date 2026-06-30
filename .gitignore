@@ -5,6 +5,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+.worktrees/
 
 mediaorchard.db
 *.sqlite
@@ -18,4 +19,3 @@ mediaorchard.db
 /work/
 /output/
 /cache/
-
