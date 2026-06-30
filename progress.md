@@ -28,7 +28,11 @@
 - Added `--wheel` support for Worker bootstrap dry-runs so target Workers can install the exact local release artifact after it is copied to the target package directory.
 - Added explicit `--copy-wheel` support for Worker bootstrap execution so the local release wheel can be copied to local or SSH targets before the setup script runs.
 - Moved Worker bootstrap shared-root layout creation before virtualenv creation and package installation so missing shared-root mounts fail fast.
+- Added `scripts/release_env_check.sh` as a read-only multi-machine release gate that runs Worker preflight and prints bootstrap dry-runs without executing remote setup.
 - Verified read-only target facts for the current worker machines: both `192.168.50.8` and `192.168.50.9` have `/opt/homebrew/bin/python3.14` and Homebrew `ffmpeg`/`ffprobe`; both still lack `/Volumes/MediaOrchard`, and `/Volumes` is not writable by `wangyan`.
 - Verified `bash scripts/release_check.sh` after the `--copy-wheel` bootstrap changes and review hardening: harness check, 117 passing tests, CLI smoke, `sdist`/wheel build, `twine check`, clean wheel install smoke, and tracked-file hygiene guard all pass.
 - Verified `bash scripts/release_check.sh` after shared-root fail-fast bootstrap hardening: harness check, 118 passing tests, CLI smoke, `sdist`/wheel build, `twine check`, clean wheel install smoke, and tracked-file hygiene guard all pass.
+- Ran `bash scripts/release_env_check.sh` on the current targets; it returned exit code `1` as expected because local whisper, remote Worker venvs, and the shared root are still missing, while still producing the bootstrap dry-run.
+- Hardened `scripts/release_env_check.sh` after Claude review: wheel discovery is version-agnostic, empty target groups are allowed, and tests cover failure aggregation.
+- Verified `bash scripts/release_check.sh` after adding the release environment gate: harness check, 123 passing tests, CLI smoke, `sdist`/wheel build, `twine check`, clean wheel install smoke, and tracked-file hygiene guard all pass.
 - Ran read-only Worker preflight after merging `--copy-wheel`: local `.venv` still lacks `mlx_whisper`; both remotes still lack the per-user Worker venv; all targets still lack `/Volumes/MediaOrchard`.

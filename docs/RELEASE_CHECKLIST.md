@@ -24,12 +24,13 @@ This project is not ready for public release until every required gate below has
 - [x] Worker bootstrap can target a local release wheel instead of assuming the package is already published to an index.
 - [x] Worker bootstrap can copy the local release wheel to local or SSH targets before executing the remote setup script.
 - [x] Worker bootstrap prepares the shared-root layout before creating the Worker virtual environment so missing mounts fail fast.
+- [x] A read-only release environment check aggregates Worker preflight and bootstrap dry-run output before multi-machine release.
 
 ## Current Evidence
 
-- `bash scripts/verify.sh`: harness check plus 118 tests pass on `main`.
+- `bash scripts/verify.sh`: harness check plus 123 tests pass on `feature/release-env-check`.
 - `bash scripts/smoke.sh`: CLI help renders successfully.
-- `bash scripts/release_check.sh`: harness check, 118 tests, CLI smoke, `python -m build`, `twine check`, clean wheel install smoke, and tracked-file hygiene guard pass on `main`.
+- `bash scripts/release_check.sh`: harness check, 123 tests, CLI smoke, `python -m build`, `twine check`, clean wheel install smoke, and tracked-file hygiene guard pass on `feature/release-env-check`.
 - Process-level CLI E2E smoke passed on `main` from a temp shared root at `/tmp/mediaorchard-main-cli-e2e.GldT3h/output/job_027f3f57c6f2`: `controller start`, `submit`, `worker start --once`, `jobs`, and artifact checks for `subtitle.srt`, `transcript.txt`, `transcript.json`, and `quality_report.json`.
 - Process-level real-media CLI E2E smoke passed on `main` from `/tmp/mediaorchard-main-real-cli-e2e.B8Gvyp/output/job_825c8527e177`: generated an input mp4 with `say` and `ffmpeg`, then ran `controller start`, `submit`, `worker start --execution-mode real --once`, `jobs`, and artifact checks for `input_meta.json`, `audio.wav`, `subtitle.srt`, `transcript.txt`, `transcript.json`, `quality_report.json`, `report.md`, and passed quality status.
 - Git repository initialized on `main`.
@@ -51,6 +52,7 @@ This project is not ready for public release until every required gate below has
 - Worker bootstrap supports `--wheel` dry-run plans so the same locally built release wheel can be copied to target Workers and installed from `/Users/wangyan/.mediaorchard/packages/` without requiring an already-published package index.
 - Worker bootstrap supports explicit `--copy-wheel --execute` mode, which creates the target package directory, copies the local release wheel with `cp` or `scp`, and stops before running the bootstrap script if the copy fails.
 - Worker bootstrap creates the shared-root layout before creating the Worker virtual environment, so `/Volumes/MediaOrchard` mount or permission failures stop before package installation leaves a partial Worker runtime.
+- `bash scripts/release_env_check.sh` is a read-only multi-machine release gate: it runs local and remote Worker preflight checks, builds or reuses a release wheel, and prints `worker-bootstrap --copy-wheel` dry-run output without passing `--execute`.
 - Read-only target probes on `192.168.50.8` and `192.168.50.9` found both machines have `/opt/homebrew/bin/python3.14` plus `ffmpeg`/`ffprobe`, but `/Volumes/MediaOrchard` is still missing and `/Volumes` is not writable by `wangyan`.
 - Post-copy-wheel read-only Worker preflight on `main` still fails for multi-machine execution: local `.venv/bin/python` lacks `mlx_whisper`, both remotes lack `/Users/wangyan/.mediaorchard/venv/bin/python`, and all targets still lack `/Volumes/MediaOrchard`.
 

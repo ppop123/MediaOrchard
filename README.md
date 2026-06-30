@@ -333,6 +333,14 @@ bash scripts/release_check.sh
 
 Run this after the setup commands above. `release_check.sh` runs the harness check, test suite, CLI smoke, package build for `sdist` and wheel, `twine check`, a clean wheel install smoke in a temporary virtual environment, and a tracked-file hygiene guard for local artifacts, secrets, databases, and media files.
 
+Multi-machine release environment check:
+
+```bash
+bash scripts/release_env_check.sh
+```
+
+This check is read-only for SSH targets. It runs local and remote Worker preflight checks, builds a temporary wheel unless `MEDIAORCHARD_WHEEL` points to an existing one, and prints the `worker-bootstrap --copy-wheel` dry-run for the configured targets. It exits non-zero while Python, whisper, media tools, or the shared root are not ready.
+
 Focused checks:
 
 ```bash
