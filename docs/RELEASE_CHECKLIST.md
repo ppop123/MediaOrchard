@@ -18,11 +18,11 @@ This project is not ready for public release until every required gate below has
 
 ## Current Evidence
 
-- `bash scripts/verify.sh`: harness check plus 9 tests pass.
+- `bash scripts/verify.sh`: harness check plus 43 tests pass on `main`.
 - `bash scripts/smoke.sh`: CLI help renders successfully.
 - Git repository initialized on `main`.
-- `feature/controller-core`: Controller API and state machine tests bring verification to 18 tests.
-- `feature/scheduler-core`: scheduler hard filters, scoring, assignment helper, active-count updates, and defensive scheduling checks bring verification to 43 tests.
+- Controller API and state machine tests are merged into `main`.
+- Scheduler hard filters, scoring, assignment helper, active-count updates, and defensive scheduling checks are merged into `main`.
 
 ## Current Release Status
 
