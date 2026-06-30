@@ -13,9 +13,13 @@
 - Step state transitions, `assignment_epoch` fencing, and timeout recovery are covered by unit tests.
 - Scheduler hard filters cover offline, stale heartbeat, shared-root mismatch, CPU, memory, disk, thermal, avoid-nodes, battery runtime, and per-tool concurrency.
 - Scheduler scoring and assignment helper are covered by unit tests.
+- Step claim/start/progress/complete/fail API paths validate `assignment_epoch` and assigned-node ownership.
+- Assigned Step claims write a `claimed_at` lease and do not return the same Step twice.
+- WorkerAgent registration, heartbeat, real Controller `claim-next`, and shutdown interruption reporting are covered by unit tests.
 
 ## Partial Surfaces
 
 - Full database persistence coverage for all release models is still incomplete.
-- Worker lifecycle and media tool execution are still planned but not implemented.
+- MVP Worker authentication still uses a shared API key plus node-id header binding; per-node credentials or mTLS are post-MVP hardening.
+- Media tool execution is still planned but not implemented.
 - End-to-end media processing cannot be claimed until the mock pipeline and real ffmpeg/whisper paths are implemented.

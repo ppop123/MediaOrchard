@@ -10,24 +10,34 @@
 
 ---
 
-## 1. Repository Status
+## 1. Repository Status And Source Of Truth
 
-This repository currently starts from a planning-only state. Treat this document as the project source of truth until implementation files exist.
+This document is the repo-level architecture and implementation roadmap. It should stay aligned with the actual codebase, but release readiness is tracked in `docs/RELEASE_CHECKLIST.md` and day-to-day progress is tracked in `progress.md`.
 
-Current root:
+Current implemented foundation:
 
 ```text
 /Users/wy/MediaOrchard/
+  AGENTS.md
+  ARCHITECTURE.md
+  README.md
+  config.example.yaml
+  docs/
+  mediaorchard/
   plan.md
+  progress.md
+  pyproject.toml
+  scripts/
+  tests/
 ```
 
-Target MVP package name:
+MVP package name:
 
 ```text
 mediaorchard
 ```
 
-Target CLI command:
+MVP CLI command:
 
 ```bash
 mediaorchard
@@ -272,13 +282,13 @@ Required fields:
 id, job_id, plan_id,
 step_type, tool_name, status,
 depends_on, assigned_node_id,
-assigned_at, assignment_epoch,
+assigned_at, claimed_at, assignment_epoch,
 input_json, output_json,
 retry_count, max_retries,
 started_at, completed_at, error_message
 ```
 
-`assignment_epoch` is a fencing token. The Controller increments it every time a Step is assigned or requeued. Worker `claim`, `start`, `progress`, `complete`, and `fail` calls must include the epoch they received; Controller must reject stale epochs so late completions from old attempts cannot publish results.
+`claimed_at` is the claim lease marker for a Step already assigned to a Worker node. `assignment_epoch` is a fencing token. The Controller increments it every time a Step is assigned or requeued. Worker `claim`, `start`, `progress`, `complete`, and `fail` calls must include the epoch they received; Controller must reject stale epochs so late completions from old attempts cannot publish results.
 
 ### ToolCall
 
@@ -409,11 +419,23 @@ GET /tools
 POST /tools/validate
 ```
 
-All Worker-facing endpoints require `Authorization: Bearer <api_key>` or an equivalent `X-MediaOrchard-Key` header. The API key is configured out-of-band and must never be stored in logs or persisted as plaintext; store only an identifier or hash if needed.
+All Worker-facing endpoints require `Authorization: Bearer <api_key>` or an equivalent `X-MediaOrchard-Key` header. Step claim and lifecycle endpoints also require `X-MediaOrchard-Node-Id: <node_id>` so the Controller can bind the call to the Step's assigned node. The API key is configured out-of-band and must never be stored in logs or persisted as plaintext; store only an identifier or hash if needed.
+
+MVP uses a shared API key plus node-id header binding on a trusted local network. Per-node API keys or mTLS are post-MVP hardening unless the network boundary changes.
 
 `POST /steps/claim-next` is the preferred MVP polling endpoint, but it must not choose directly from the global queued pool. The scheduler loop is the only component allowed to move a Step from `queued` to `assigned`; it must apply the hard filters and scoring rules in Section 10 before setting `assigned_node_id`.
 
-`claim-next` returns one Step already assigned to the authenticated node. Its database guard must be equivalent to `WHERE status='assigned' AND assigned_node_id=:node_id`; if two processes using the same `node_id` race, exactly one may receive a claim lease. MVP assumes one active Worker process per `node_id`; duplicate active registrations should be rejected or should explicitly replace the previous heartbeat.
+`POST /steps/claim-next` payload:
+
+```json
+{
+  "node_id": "mac-studio"
+}
+```
+
+The `node_id` payload must match `X-MediaOrchard-Node-Id`.
+
+`claim-next` returns one Step already assigned to the authenticated node. Its database guard must be equivalent to `WHERE status='assigned' AND assigned_node_id=:node_id AND claimed_at IS NULL`; if two processes using the same `node_id` race, exactly one may receive a claim lease. MVP assumes one active Worker process per `node_id`; duplicate active registrations should be rejected or should explicitly replace the previous heartbeat.
 
 When no Step is claimable for the authenticated node, `claim-next` returns `204 No Content`.
 
@@ -836,6 +858,8 @@ README must document API key creation and hashing. MVP may provide a CLI helper 
 
 ### Milestone 0: Repo Bootstrap
 
+**Status:** implemented.
+
 **Files:**
 
 ```text
@@ -858,6 +882,8 @@ both run successfully in a fresh environment.
 
 ### Milestone 1: Shared Types, Config, And Path Safety
 
+**Status:** implemented for the current foundation.
+
 **Files:**
 
 ```text
@@ -875,6 +901,8 @@ Create: tests/test_policy.py
 **Done when:** path traversal, outside-root access, overwrite cases, API-key validation helpers, secret redaction, and shared-root mismatch cases are covered by tests.
 
 ### Milestone 2: Database Models And State Machine
+
+**Status:** implemented for core models and state transitions; broad persistence coverage is still a release gate.
 
 **Files:**
 
@@ -900,6 +928,8 @@ README must state which mode the current build uses.
 
 ### Milestone 3: Controller API
 
+**Status:** implemented for node registration, heartbeat, job create/list/get, assigned Step claim, and Step lifecycle updates. Job cancellation/retry and richer read APIs are still pending.
+
 **Files:**
 
 ```text
@@ -916,6 +946,8 @@ Create: tests/test_api.py
 
 ### Milestone 4: Planner And Scheduler
 
+**Status:** scheduler policies, scoring, and assignment helper are implemented. Planner and persistent scheduling decision records are still pending.
+
 **Files:**
 
 ```text
@@ -931,6 +963,8 @@ Create: tests/test_scheduler.py
 **Done when:** tests prove overloaded, offline, low-disk, hot, battery-constrained, and shared-root-mismatched nodes do not receive new work.
 
 ### Milestone 5: Worker Runtime And Tools
+
+**Status:** WorkerAgent registration, heartbeat, assigned-step claim, and shutdown interruption reporting are implemented. Tool execution, process management, metrics collection, and mock media pipeline are still pending.
 
 **Files:**
 
@@ -956,6 +990,8 @@ Create: tests/test_worker_lifecycle.py
 
 ### Milestone 6: CLI End-To-End Demo
 
+**Status:** CLI shell and help commands exist. End-to-end submit/run/status commands are still pending.
+
 **Files:**
 
 ```text
@@ -977,6 +1013,8 @@ Errors: one-line human message by default, structured JSON error with --json.
 ```
 
 ### Milestone 7: Recovery And Reports
+
+**Status:** state-machine recovery helpers exist. Runtime recovery loop, final reports, and quality artifacts are still pending.
 
 **Files:**
 
@@ -1087,13 +1125,12 @@ logs are structured and do not expose configured secret fields
 
 Resolve these during implementation, not before bootstrap:
 
-1. Use SQLModel or SQLAlchemy directly.
-2. Use Worker polling only, or add Controller push later.
-3. Exact whisper CLI invocation for the installed backend on each Mac.
-4. Whether `audio.wav` should be copied to final output by default or kept only as an intermediate artifact.
-5. Exact threshold for batch approval.
-6. Whether `vtt` is part of MVP default outputs or optional.
-7. Whether local HTTP plus shared API key is enough for the first trusted-network deployment, or whether TLS is required before using more than one physical Mac.
+1. Exact whisper CLI invocation for the installed backend on each Mac.
+2. Whether `audio.wav` should be copied to final output by default or kept only as an intermediate artifact.
+3. Exact threshold for batch approval.
+4. Whether `vtt` is part of MVP default outputs or optional.
+5. Whether local HTTP plus shared API key is enough for the first trusted-network deployment, or whether TLS is required before using more than one physical Mac.
+6. Whether post-MVP hardening should use per-node API keys, mTLS, or both.
 
 Default choices until changed:
 

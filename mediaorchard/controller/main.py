@@ -7,11 +7,17 @@ from pathlib import Path
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
+from sqlalchemy import update
 from sqlmodel import Session, select
 
-from mediaorchard.controller.db.models import Job, Node, utcnow
+from mediaorchard.controller.db.models import Job, Node, Step, utcnow
 from mediaorchard.controller.db.session import create_db_engine, init_db
-from mediaorchard.shared.enums import NodeStatus
+from mediaorchard.controller.runtime.state_machine import (
+    TransitionError,
+    transition_step,
+    validate_assignment_epoch,
+)
+from mediaorchard.shared.enums import NodeStatus, StepStatus
 from mediaorchard.shared.paths import (
     PathSecurityError,
     build_job_output_dir,
@@ -50,6 +56,27 @@ class JobCreateRequest(BaseModel):
     user_request: str | None = None
 
 
+class StepEpochRequest(BaseModel):
+    assignment_epoch: int
+
+
+class StepClaimNextRequest(BaseModel):
+    node_id: str
+
+
+class StepProgressRequest(StepEpochRequest):
+    percent: float | None = Field(default=None, ge=0, le=100)
+    message: str | None = None
+
+
+class StepCompleteRequest(StepEpochRequest):
+    output_json: dict = Field(default_factory=dict)
+
+
+class StepFailRequest(StepEpochRequest):
+    error_message: str
+
+
 def create_app(
     *,
     database_url: str = "sqlite:///mediaorchard.db",
@@ -60,6 +87,7 @@ def create_app(
     engine = create_db_engine(database_url)
     init_db(engine)
     app.state.engine = engine
+    app.state.session_factory = lambda: Session(engine)
     app.state.api_key_hash = api_key_hash
     app.state.shared_root = Path(shared_root).expanduser().resolve(strict=False)
 
@@ -78,6 +106,13 @@ def create_app(
 
         if not verify_api_key(raw_key or "", request.app.state.api_key_hash):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid worker api key")
+
+    def require_worker_node_id(
+        x_mediaorchard_node_id: str | None = Header(default=None),
+    ) -> str:
+        if not x_mediaorchard_node_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="missing worker node id")
+        return x_mediaorchard_node_id
 
     @app.get("/nodes")
     def list_nodes(
@@ -201,9 +236,209 @@ def create_app(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="job not found")
         return job
 
-    @app.post("/steps/claim-next", status_code=status.HTTP_204_NO_CONTENT)
-    def claim_next(_: None = Depends(require_worker_auth)) -> Response:
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    def get_step_or_404(step_id: str, session: Session) -> Step:
+        step = session.get(Step, step_id)
+        if step is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="step not found")
+        return step
+
+    def validate_epoch_or_409(step: Step, assignment_epoch: int) -> None:
+        try:
+            validate_assignment_epoch(step, assignment_epoch)
+        except TransitionError as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+
+    def transition_or_409(step: Step, target: StepStatus) -> StepStatus:
+        try:
+            return transition_step(step.status, target)
+        except TransitionError as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+
+    def validate_worker_ownership(step: Step, worker_node_id: str) -> None:
+        if step.assigned_node_id != worker_node_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="worker does not own assigned step")
+
+    def persist_step_update_or_409(
+        session: Session,
+        step: Step,
+        *,
+        worker_node_id: str,
+        from_statuses: set[StepStatus],
+        values: dict,
+        require_unclaimed: bool = False,
+    ) -> Step:
+        statement = (
+            update(Step)
+            .where(Step.id == step.id)
+            .where(Step.assignment_epoch == step.assignment_epoch)
+            .where(Step.assigned_node_id == worker_node_id)
+            .where(Step.status.in_(from_statuses))
+        )
+        if require_unclaimed:
+            statement = statement.where(Step.claimed_at.is_(None))
+
+        result = session.exec(statement.values(**values))
+        if result.rowcount != 1:
+            session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="step changed before lifecycle update",
+            )
+        session.commit()
+        refreshed = session.get(Step, step.id)
+        if refreshed is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="step not found")
+        return refreshed
+
+    @app.post("/steps/claim-next", response_model=None)
+    def claim_next(
+        body: StepClaimNextRequest,
+        _: None = Depends(require_worker_auth),
+        worker_node_id: str = Depends(require_worker_node_id),
+        session: Session = Depends(get_session),
+    ) -> Step | Response:
+        if body.node_id != worker_node_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="worker node id mismatch")
+
+        step = session.exec(
+            select(Step)
+            .where(Step.status == StepStatus.ASSIGNED)
+            .where(Step.assigned_node_id == worker_node_id)
+            .where(Step.claimed_at.is_(None))
+            .order_by(Step.assigned_at)
+            .limit(1)
+        ).first()
+        if step is None:
+            return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+        now = datetime.now(UTC)
+        result = session.exec(
+            update(Step)
+            .where(Step.id == step.id)
+            .where(Step.status == StepStatus.ASSIGNED)
+            .where(Step.assigned_node_id == worker_node_id)
+            .where(Step.claimed_at.is_(None))
+            .values(claimed_at=now)
+        )
+        if result.rowcount != 1:
+            session.rollback()
+            return Response(status_code=status.HTTP_204_NO_CONTENT)
+        session.commit()
+        step = session.get(Step, step.id)
+        if step is None:
+            return Response(status_code=status.HTTP_204_NO_CONTENT)
+        return step
+
+    @app.post("/steps/{step_id}/start")
+    def start_step(
+        step_id: str,
+        body: StepEpochRequest,
+        _: None = Depends(require_worker_auth),
+        worker_node_id: str = Depends(require_worker_node_id),
+        session: Session = Depends(get_session),
+    ) -> Step:
+        step = get_step_or_404(step_id, session)
+        validate_worker_ownership(step, worker_node_id)
+        validate_epoch_or_409(step, body.assignment_epoch)
+        next_status = transition_or_409(step, StepStatus.RUNNING)
+        return persist_step_update_or_409(
+            session,
+            step,
+            worker_node_id=worker_node_id,
+            from_statuses={StepStatus.ASSIGNED},
+            values={"status": next_status, "started_at": datetime.now(UTC)},
+        )
+
+    @app.post("/steps/{step_id}/progress")
+    def progress_step(
+        step_id: str,
+        body: StepProgressRequest,
+        _: None = Depends(require_worker_auth),
+        worker_node_id: str = Depends(require_worker_node_id),
+        session: Session = Depends(get_session),
+    ) -> Step:
+        step = get_step_or_404(step_id, session)
+        validate_worker_ownership(step, worker_node_id)
+        validate_epoch_or_409(step, body.assignment_epoch)
+        progress_payload = {"percent": body.percent, "message": body.message}
+        output_json = {**(step.output_json or {}), "progress": progress_payload}
+        return persist_step_update_or_409(
+            session,
+            step,
+            worker_node_id=worker_node_id,
+            from_statuses={StepStatus.RUNNING},
+            values={"output_json": output_json},
+        )
+
+    @app.post("/steps/{step_id}/complete")
+    def complete_step(
+        step_id: str,
+        body: StepCompleteRequest,
+        _: None = Depends(require_worker_auth),
+        worker_node_id: str = Depends(require_worker_node_id),
+        session: Session = Depends(get_session),
+    ) -> Step:
+        step = get_step_or_404(step_id, session)
+        validate_worker_ownership(step, worker_node_id)
+        validate_epoch_or_409(step, body.assignment_epoch)
+        next_status = transition_or_409(step, StepStatus.COMPLETED)
+        return persist_step_update_or_409(
+            session,
+            step,
+            worker_node_id=worker_node_id,
+            from_statuses={StepStatus.RUNNING},
+            values={
+                "status": next_status,
+                "output_json": body.output_json,
+                "completed_at": datetime.now(UTC),
+            },
+        )
+
+    @app.post("/steps/{step_id}/fail")
+    def fail_step(
+        step_id: str,
+        body: StepFailRequest,
+        _: None = Depends(require_worker_auth),
+        worker_node_id: str = Depends(require_worker_node_id),
+        session: Session = Depends(get_session),
+    ) -> Step:
+        step = get_step_or_404(step_id, session)
+        validate_worker_ownership(step, worker_node_id)
+        validate_epoch_or_409(step, body.assignment_epoch)
+        next_status = transition_or_409(step, StepStatus.FAILED)
+        return persist_step_update_or_409(
+            session,
+            step,
+            worker_node_id=worker_node_id,
+            from_statuses={StepStatus.ASSIGNED, StepStatus.RUNNING},
+            values={
+                "status": next_status,
+                "error_message": body.error_message,
+                "completed_at": datetime.now(UTC),
+            },
+        )
+
+    @app.post("/steps/{step_id}/claim")
+    def claim_step(
+        step_id: str,
+        body: StepEpochRequest,
+        _: None = Depends(require_worker_auth),
+        worker_node_id: str = Depends(require_worker_node_id),
+        session: Session = Depends(get_session),
+    ) -> Step:
+        step = get_step_or_404(step_id, session)
+        validate_worker_ownership(step, worker_node_id)
+        validate_epoch_or_409(step, body.assignment_epoch)
+        if step.status != StepStatus.ASSIGNED:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="step is not assigned")
+        return persist_step_update_or_409(
+            session,
+            step,
+            worker_node_id=worker_node_id,
+            from_statuses={StepStatus.ASSIGNED},
+            values={"claimed_at": datetime.now(UTC)},
+            require_unclaimed=True,
+        )
 
     return app
 

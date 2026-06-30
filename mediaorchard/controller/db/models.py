@@ -81,6 +81,7 @@ class Step(SQLModel, table=True):
     depends_on: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     assigned_node_id: str | None = None
     assigned_at: datetime | None = None
+    claimed_at: datetime | None = None
     assignment_epoch: int = 0
     input_json: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     output_json: dict[str, Any] | None = Field(default=None, sa_column=Column(JSON))
@@ -125,4 +126,3 @@ class QualityReport(SQLModel, table=True):
     warnings_json: list[Any] = Field(default_factory=list, sa_column=Column(JSON))
     recommendations_json: list[Any] = Field(default_factory=list, sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=utcnow)
-
