@@ -11,9 +11,11 @@
 - Controller Worker endpoints reject missing authentication.
 - Node registration, heartbeat, job creation, job retrieval, and empty `claim-next` are covered by API tests.
 - Step state transitions, `assignment_epoch` fencing, and timeout recovery are covered by unit tests.
+- Scheduler hard filters cover offline, stale heartbeat, shared-root mismatch, CPU, memory, disk, thermal, avoid-nodes, battery runtime, and per-tool concurrency.
+- Scheduler scoring and assignment helper are covered by unit tests.
 
 ## Partial Surfaces
 
 - Full database persistence coverage for all release models is still incomplete.
-- Scheduler, Worker lifecycle, and media tool execution are still planned but not implemented.
+- Worker lifecycle and media tool execution are still planned but not implemented.
 - End-to-end media processing cannot be claimed until the mock pipeline and real ffmpeg/whisper paths are implemented.

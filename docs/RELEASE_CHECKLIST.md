@@ -7,7 +7,7 @@ This project is not ready for public release until every required gate below has
 - [x] Controller API exists and has tests for jobs, nodes, heartbeat, and authenticated Worker calls.
 - [ ] Database models persist Node, Job, Plan, Step, ToolCall, AgentDecision, and QualityReport records.
 - [x] State machine tests cover legal transitions, illegal transitions, `assignment_epoch`, and Worker timeout recovery.
-- [ ] Scheduler tests cover offline, stale heartbeat, CPU, memory, disk, thermal, battery, shared-root, and concurrency filters.
+- [x] Scheduler tests cover offline, stale heartbeat, CPU, memory, disk, thermal, battery, shared-root, and concurrency filters.
 - [ ] Worker lifecycle tests cover registration, heartbeat, assigned-step claim, graceful shutdown, and stale completion rejection.
 - [ ] Tool execution uses structured `list[str]` argv with `shell=False`.
 - [ ] Mock `video_to_subtitle` pipeline completes without real media tools.
@@ -22,7 +22,8 @@ This project is not ready for public release until every required gate below has
 - `bash scripts/smoke.sh`: CLI help renders successfully.
 - Git repository initialized on `main`.
 - `feature/controller-core`: Controller API and state machine tests bring verification to 18 tests.
+- `feature/scheduler-core`: scheduler hard filters, scoring, assignment helper, active-count updates, and defensive scheduling checks bring verification to 43 tests.
 
 ## Current Release Status
 
-Not releasable yet. The repository has a verified Controller/API foundation, but scheduler, Worker runtime, media tools, mock pipeline, real-media smoke test, and full release documentation are still pending.
+Not releasable yet. The repository has verified Controller/API and scheduler foundations, but Worker runtime, media tools, mock pipeline, real-media smoke test, and full release documentation are still pending.
