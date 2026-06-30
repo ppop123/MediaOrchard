@@ -44,6 +44,20 @@ def test_release_check_script_is_executable_and_references_release_gates():
     assert "\\.pem" in text
 
 
+def test_github_actions_release_check_runs_public_release_gate():
+    workflow = ROOT / ".github" / "workflows" / "release-check.yml"
+
+    assert workflow.exists()
+    text = workflow.read_text()
+    assert "macos-" in text
+    assert "actions/setup-python" in text
+    assert 'python-version: "3.12"' in text
+    assert '.venv/bin/python -m pip install -e ".[dev]"' in text
+    assert "concurrency:" in text
+    assert "cancel-in-progress: true" in text
+    assert "PYTHON_FOR_VENV=.venv/bin/python bash scripts/release_check.sh" in text
+
+
 def test_release_env_check_script_is_executable_and_read_only():
     script = ROOT / "scripts" / "release_env_check.sh"
 
