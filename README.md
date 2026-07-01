@@ -20,17 +20,18 @@ Implemented foundations:
 - Worker `--execution-mode real` path that uses `ffprobe`, `ffmpeg`, and `mlx_whisper` to produce transcript and subtitle artifacts from submitted media.
 - Local real-media smoke path that verifies `say`, `ffmpeg`, `ffprobe`, and `mlx_whisper`.
 
-Known MVP boundaries:
+Release scope and MVP boundaries:
 
 - The default Worker mode is deterministic for fast smoke tests. Use `--execution-mode real` only on a Mac with the real media toolchain installed.
-- Multi-Mac real-media execution requires each target Worker to have Python 3.11+, `ffmpeg`, `ffprobe`, the whisper backend, and the same resolved shared root mounted.
+- Single-machine package checks and CLI demos can use a local temporary root.
+- Multi-Mac real-media execution requires marker-verified shared storage plus Python 3.11+, `ffmpeg`, `ffprobe`, and the whisper backend on each target Worker.
 
 ## Requirements
 
 - Python 3.11 or newer.
 - macOS for the intended Worker environment.
 - A trusted local network for the MVP shared-key setup.
-- Shared storage mounted at the same resolved path on Controller and Workers, for example `/Volumes/MediaOrchard`.
+- For multi-Mac execution, shared storage mounted at the same resolved path on Controller and Workers, for example `/Volumes/MediaOrchard`.
 - For real-media smoke tests: `ffmpeg`, `ffprobe`, and the configured whisper backend such as `mlx-whisper`.
 
 ## Setup
@@ -82,6 +83,10 @@ Default shared storage layout:
   logs/
   cache/
 ```
+
+Single-machine demos may use a temporary local root with this layout. Multi-Mac
+Workers must use a real shared filesystem mounted at the same resolved path;
+matching local directories on separate machines are not sufficient.
 
 Create it for local testing:
 

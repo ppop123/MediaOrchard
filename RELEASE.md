@@ -14,6 +14,19 @@ until the target Worker machines pass the release environment gate.
   local plus SSH targets after Worker environments and the shared root are
   prepared.
 
+## Shared Storage Scope
+
+Single-machine release does not require shared storage. Package checks,
+deterministic demos, and the single-machine real-media CLI demo can use a local
+temporary root because the Controller and Worker run on the same Mac and read
+the same filesystem directly.
+
+Multi-machine release requires marker-verified shared storage. Every Worker
+must see the same real shared filesystem mounted at the same resolved path,
+for example `/Volumes/MediaOrchard`; the same local path on separate disks is not
+sufficient. Use a marker token stored inside the shared root as the release
+proof that local and remote targets are reading the same storage.
+
 Do not claim multi-machine real-media execution until every target has Python
 3.11+, `ffmpeg`, `ffprobe`, a working `mlx_whisper` import, a Worker virtual
 environment, and the same resolved shared root such as `/Volumes/MediaOrchard`.

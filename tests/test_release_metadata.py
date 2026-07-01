@@ -7,6 +7,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def collapsed_text(path: Path) -> str:
+    return " ".join(path.read_text().split())
+
+
 def test_project_has_explicit_mit_license_file():
     license_file = ROOT / "LICENSE"
 
@@ -70,6 +74,17 @@ def test_release_env_check_script_is_executable_and_read_only():
     assert "--copy-wheel" in text
     assert "--execute" not in text
     assert "This script does not execute remote bootstrap" in text
+
+
+def test_release_docs_define_shared_storage_release_scope():
+    release = collapsed_text(ROOT / "RELEASE.md")
+    readme = collapsed_text(ROOT / "README.md")
+
+    assert "Single-machine release does not require shared storage" in release
+    assert "Multi-machine release requires marker-verified shared storage" in release
+    assert "same local path on separate disks is not sufficient" in release
+    assert "Single-machine package checks and CLI demos can use a local temporary root" in readme
+    assert "Multi-Mac real-media execution requires marker-verified shared storage" in readme
 
 
 def test_release_env_check_script_runs_preflight_and_bootstrap_dry_run(tmp_path):
