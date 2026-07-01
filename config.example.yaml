@@ -25,6 +25,10 @@ scheduler:
   max_cpu_percent: 85
   max_memory_percent: 85
   min_free_disk_gb: 20
+  node_priorities:
+    "192.168.50.8": 100
+    "192.168.50.9": 100
+    "local": 0
 
 recovery:
   default_max_retries: 2
@@ -63,4 +67,3 @@ nodes:
     max_whisper_jobs: 1
     avoid_on_battery: true
     max_runtime_on_battery_minutes: 20
-

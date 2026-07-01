@@ -4,7 +4,7 @@ import json
 import os
 import time
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError
@@ -13,6 +13,7 @@ from urllib.request import Request, urlopen
 import psutil
 import uvicorn
 
+from mediaorchard.controller.scheduler.policies import format_node_priorities
 from mediaorchard.worker.agent import WorkerAgent, WorkerTransport
 from mediaorchard.worker.mock_pipeline import run_mock_video_to_subtitle_pipeline
 from mediaorchard.worker.real_media_smoke import run_real_video_to_subtitle_pipeline
@@ -25,6 +26,7 @@ class ControllerRuntimeConfig:
     database_url: str
     api_key_hash: str
     shared_root: Path
+    node_priorities: dict[str, int] = field(default_factory=dict)
     log_level: str = "info"
     env_file: str | None = None
 
@@ -151,6 +153,10 @@ def run_controller(
     os.environ["MEDIAORCHARD_DATABASE_URL"] = config.database_url
     os.environ["MEDIAORCHARD_API_KEY_HASH"] = config.api_key_hash
     os.environ["MEDIAORCHARD_SHARED_ROOT"] = str(config.shared_root.expanduser().resolve(strict=False))
+    if config.node_priorities:
+        os.environ["MEDIAORCHARD_NODE_PRIORITIES"] = format_node_priorities(config.node_priorities)
+    else:
+        os.environ.pop("MEDIAORCHARD_NODE_PRIORITIES", None)
     uvicorn_run(
         "mediaorchard.controller.main:app",
         host=config.host,

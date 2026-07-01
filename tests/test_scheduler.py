@@ -166,6 +166,51 @@ def test_select_node_returns_lowest_cost_eligible_node_and_rejections():
     assert decision.score_breakdown["low"]["total"] < decision.score_breakdown["high"]["total"]
 
 
+def test_select_node_prefers_higher_priority_host_over_lower_load_local_node():
+    config = SchedulerConfig(
+        shared_root="/Volumes/MediaOrchard",
+        node_priorities={"192.168.50.8": 100},
+    )
+    step = make_step()
+    local = make_node(id="local", host="127.0.0.1", cpu_percent=5, memory_percent=5)
+    remote = make_node(id="mac-mini", host="192.168.50.8", cpu_percent=60, memory_percent=60)
+
+    decision = select_node_for_step(step, [local, remote], config, now=NOW)
+
+    assert decision.selected_node == remote
+    assert decision.score_breakdown["mac-mini"]["priority_bonus"] == 100.0
+    assert decision.score_breakdown["local"]["priority_bonus"] == 0.0
+
+
+def test_select_node_priority_can_match_node_id_when_host_is_unavailable():
+    config = SchedulerConfig(
+        shared_root="/Volumes/MediaOrchard",
+        node_priorities={"192.168.50.9": 100},
+    )
+    step = make_step()
+    local = make_node(id="local", host=None, cpu_percent=5, memory_percent=5)
+    remote = make_node(id="192.168.50.9", host=None, cpu_percent=60, memory_percent=60)
+
+    decision = select_node_for_step(step, [local, remote], config, now=NOW)
+
+    assert decision.selected_node == remote
+
+
+def test_node_priority_does_not_override_hard_filters():
+    config = SchedulerConfig(
+        shared_root="/Volumes/MediaOrchard",
+        node_priorities={"192.168.50.8": 100},
+    )
+    step = make_step()
+    local = make_node(id="local", cpu_percent=10, memory_percent=10)
+    overloaded_remote = make_node(id="mac-mini", host="192.168.50.8", cpu_percent=95, memory_percent=10)
+
+    decision = select_node_for_step(step, [overloaded_remote, local], config, now=NOW)
+
+    assert decision.selected_node == local
+    assert decision.rejected_nodes["mac-mini"] == "cpu_too_high"
+
+
 def test_select_node_tie_breaks_by_node_id():
     config = SchedulerConfig(shared_root="/Volumes/MediaOrchard")
     step = make_step()

@@ -46,6 +46,10 @@ def test_controller_start_invokes_runtime(monkeypatch, tmp_path):
             "sha256:test",
             "--shared-root",
             str(tmp_path),
+            "--node-priority",
+            "192.168.50.8=100",
+            "--node-priority",
+            "192.168.50.9=100",
         ],
     )
 
@@ -55,6 +59,7 @@ def test_controller_start_invokes_runtime(monkeypatch, tmp_path):
     assert calls[0].host == "127.0.0.1"
     assert calls[0].port == 9876
     assert calls[0].api_key_hash == "sha256:test"
+    assert calls[0].node_priorities == {"192.168.50.8": 100, "192.168.50.9": 100}
 
 
 def test_controller_start_requires_api_key_hash(tmp_path):

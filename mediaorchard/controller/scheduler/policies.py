@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
 from mediaorchard.controller.db.models import Node, Step
@@ -15,6 +15,7 @@ class SchedulerConfig:
     max_memory_percent: float = 85.0
     min_free_disk_gb: float = 20.0
     max_runtime_on_battery_minutes: int = 20
+    node_priorities: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -42,6 +43,32 @@ def estimated_runtime_minutes(step: Step) -> float:
         return 0.0
     value = step.input_json.get("estimated_runtime_minutes", 0)
     return float(value or 0)
+
+
+def parse_node_priorities(raw: str | None) -> dict[str, int]:
+    if not raw:
+        return {}
+
+    priorities: dict[str, int] = {}
+    for entry in raw.split(","):
+        item = entry.strip()
+        if not item:
+            continue
+        key, separator, value = item.partition("=")
+        if not separator or not key.strip():
+            raise ValueError("node priority must use key=value")
+        try:
+            priority = int(value)
+        except ValueError as exc:
+            raise ValueError(f"node priority for {key.strip()} must be an integer") from exc
+        if priority < 0:
+            raise ValueError(f"node priority for {key.strip()} must be non-negative")
+        priorities[key.strip()] = priority
+    return priorities
+
+
+def format_node_priorities(priorities: dict[str, int]) -> str:
+    return ",".join(f"{key}={value}" for key, value in priorities.items())
 
 
 def heartbeat_expired(node: Node, config: SchedulerConfig, now: datetime) -> bool:

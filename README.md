@@ -69,7 +69,7 @@ Important sections:
 - `controller.database_url`: SQLite database path. Use a disposable local database during pre-release development.
 - `controller.api_key_hash`: SHA-256 hash of the shared Worker API key.
 - `storage.shared_root`: shared media root that must resolve to the same path on every schedulable Worker.
-- `scheduler.*`: hard-filter thresholds for heartbeat age, CPU, memory, disk, thermal, and battery constraints.
+- `scheduler.*`: hard-filter thresholds for heartbeat age, CPU, memory, disk, thermal, and battery constraints. `scheduler.node_priorities` is a soft scheduling preference; keys may be node ids or host/IP values, and larger numbers are preferred after hard filters pass.
 - `worker.*`: heartbeat, claim, and shutdown timing.
 - `whisper.*` and `ffmpeg.*`: real-media backend defaults.
 
@@ -116,7 +116,16 @@ Start the Controller with the CLI:
 export MEDIAORCHARD_API_KEY_HASH='sha256:replace-with-generated-hash'
 export MEDIAORCHARD_SHARED_ROOT='/Volumes/MediaOrchard'
 export MEDIAORCHARD_DATABASE_URL='sqlite:///mediaorchard.db'
+export MEDIAORCHARD_NODE_PRIORITIES='192.168.50.8=100,192.168.50.9=100,local=0'
 mediaorchard controller start --host 0.0.0.0 --port 8765
+```
+
+You can also pass priorities directly, for example:
+
+```bash
+mediaorchard controller start \
+  --node-priority 192.168.50.8=100 \
+  --node-priority 192.168.50.9=100
 ```
 
 Worker-facing requests require one of:

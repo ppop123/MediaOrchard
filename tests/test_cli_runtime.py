@@ -68,6 +68,7 @@ def test_run_controller_exports_controller_environment(tmp_path, monkeypatch):
     monkeypatch.delenv("MEDIAORCHARD_DATABASE_URL", raising=False)
     monkeypatch.delenv("MEDIAORCHARD_API_KEY_HASH", raising=False)
     monkeypatch.delenv("MEDIAORCHARD_SHARED_ROOT", raising=False)
+    monkeypatch.delenv("MEDIAORCHARD_NODE_PRIORITIES", raising=False)
 
     config = ControllerRuntimeConfig(
         host="127.0.0.1",
@@ -75,6 +76,7 @@ def test_run_controller_exports_controller_environment(tmp_path, monkeypatch):
         database_url=f"sqlite:///{tmp_path / 'controller.db'}",
         api_key_hash="sha256:test",
         shared_root=tmp_path,
+        node_priorities={"192.168.50.8": 100, "192.168.50.9": 100},
     )
 
     run_controller(config, uvicorn_run=lambda *_args, **_kwargs: None)
@@ -82,6 +84,7 @@ def test_run_controller_exports_controller_environment(tmp_path, monkeypatch):
     assert __import__("os").environ["MEDIAORCHARD_DATABASE_URL"] == config.database_url
     assert __import__("os").environ["MEDIAORCHARD_API_KEY_HASH"] == "sha256:test"
     assert __import__("os").environ["MEDIAORCHARD_SHARED_ROOT"] == str(tmp_path.resolve())
+    assert __import__("os").environ["MEDIAORCHARD_NODE_PRIORITIES"] == "192.168.50.8=100,192.168.50.9=100"
 
 
 def test_controller_api_helpers_send_auth_header_and_decode_lists(monkeypatch):

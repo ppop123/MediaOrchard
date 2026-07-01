@@ -14,6 +14,7 @@ from mediaorchard.cli.runtime import (
     run_worker,
     submit_job,
 )
+from mediaorchard.controller.scheduler.policies import parse_node_priorities
 from mediaorchard.worker.bootstrap import DEFAULT_PACKAGE_SPEC, WorkerBootstrapConfig, run_worker_bootstrap
 from mediaorchard.worker.preflight import WorkerPreflightConfig, run_worker_preflight
 
@@ -47,10 +48,16 @@ def controller_start(
         "--shared-root",
         envvar="MEDIAORCHARD_SHARED_ROOT",
     ),
+    node_priority: list[str] | None = typer.Option(
+        None,
+        "--node-priority",
+        help="Scheduler priority as key=value; key can be node id or host/IP. May be repeated.",
+    ),
     log_level: str = typer.Option("info", "--log-level"),
 ) -> None:
     """Start the Controller service."""
     raw_api_key_hash = _require_api_key_hash(api_key_hash)
+    node_priorities = _parse_node_priorities(node_priority)
     typer.echo(f"Starting Controller on {host}:{port}")
     run_controller(
         ControllerRuntimeConfig(
@@ -59,6 +66,7 @@ def controller_start(
             database_url=database_url,
             api_key_hash=raw_api_key_hash,
             shared_root=shared_root,
+            node_priorities=node_priorities,
             log_level=log_level,
         )
     )
@@ -329,6 +337,16 @@ def _require_api_key_hash(api_key_hash: str | None) -> str:
             "Controller API key hash is required via --api-key-hash or MEDIAORCHARD_API_KEY_HASH"
         )
     return raw_api_key_hash
+
+
+def _parse_node_priorities(values: list[str] | None) -> dict[str, int]:
+    raw = ",".join(values or [])
+    if not raw:
+        raw = os.getenv("MEDIAORCHARD_NODE_PRIORITIES", "")
+    try:
+        return parse_node_priorities(raw)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
 
 
 def _display(value: object) -> str:

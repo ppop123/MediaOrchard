@@ -18,7 +18,7 @@ from mediaorchard.controller.runtime.state_machine import (
     validate_assignment_epoch,
 )
 from mediaorchard.controller.scheduler.loop import SchedulerError, assign_best_node
-from mediaorchard.controller.scheduler.policies import SchedulerConfig
+from mediaorchard.controller.scheduler.policies import SchedulerConfig, parse_node_priorities
 from mediaorchard.shared.enums import JobStatus, NodeStatus, StepStatus
 from mediaorchard.shared.paths import (
     PathSecurityError,
@@ -84,6 +84,7 @@ def create_app(
     database_url: str = "sqlite:///mediaorchard.db",
     api_key_hash: str = "",
     shared_root: str | Path = "/Volumes/MediaOrchard",
+    node_priorities: dict[str, int] | None = None,
 ) -> FastAPI:
     app = FastAPI(title="MediaOrchard Controller")
     engine = create_db_engine(database_url)
@@ -92,6 +93,7 @@ def create_app(
     app.state.session_factory = lambda: Session(engine)
     app.state.api_key_hash = api_key_hash
     app.state.shared_root = Path(shared_root).expanduser().resolve(strict=False)
+    app.state.node_priorities = dict(node_priorities or {})
 
     def get_session() -> Generator[Session, None, None]:
         with Session(engine) as session:
@@ -129,7 +131,10 @@ def create_app(
             return
 
         nodes = list(session.exec(select(Node)).all())
-        scheduler_config = SchedulerConfig(shared_root=str(app.state.shared_root))
+        scheduler_config = SchedulerConfig(
+            shared_root=str(app.state.shared_root),
+            node_priorities=app.state.node_priorities,
+        )
         for step in queued_steps:
             try:
                 decision = assign_best_node(step, nodes, scheduler_config, now=now)
@@ -560,4 +565,5 @@ app = create_app(
     database_url=os.getenv("MEDIAORCHARD_DATABASE_URL", "sqlite:///mediaorchard.db"),
     api_key_hash=os.getenv("MEDIAORCHARD_API_KEY_HASH", "__unset__"),
     shared_root=os.getenv("MEDIAORCHARD_SHARED_ROOT", "/Volumes/MediaOrchard"),
+    node_priorities=parse_node_priorities(os.getenv("MEDIAORCHARD_NODE_PRIORITIES")),
 )

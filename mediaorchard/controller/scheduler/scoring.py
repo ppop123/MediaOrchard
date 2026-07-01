@@ -44,6 +44,14 @@ def thermal_penalty(node: Node) -> float:
     }.get(node.thermal_state, 10.0)
 
 
+def node_priority_bonus(node: Node, config: SchedulerConfig) -> float:
+    if node.id in config.node_priorities:
+        return float(config.node_priorities[node.id])
+    if node.host and node.host in config.node_priorities:
+        return float(config.node_priorities[node.host])
+    return 0.0
+
+
 def calculate_node_cost(step: Step, node: Node, config: SchedulerConfig) -> NodeCost:
     components = {
         "cpu_load": 0.30 * node.cpu_percent,
@@ -54,6 +62,7 @@ def calculate_node_cost(step: Step, node: Node, config: SchedulerConfig) -> Node
         "recent_usage_penalty": 0.0,
         "file_locality_bonus": 0.0,
         "benchmark_speed_bonus": 0.0,
+        "priority_bonus": node_priority_bonus(node, config),
     }
     total = (
         components["cpu_load"]
@@ -64,6 +73,7 @@ def calculate_node_cost(step: Step, node: Node, config: SchedulerConfig) -> Node
         + components["recent_usage_penalty"]
         - components["file_locality_bonus"]
         - components["benchmark_speed_bonus"]
+        - components["priority_bonus"]
     )
     components["total"] = total
     return NodeCost(total=total, components=components)
