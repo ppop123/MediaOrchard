@@ -48,3 +48,7 @@
 - Re-ran `bash scripts/release_env_check.sh` on `main`; it remains a read-only failing gate with exit code `1` until remote Worker venvs and `/Volumes/MediaOrchard` are prepared, while local `.venv/bin/python` still passes the `mlx_whisper` check.
 - Added `.github/workflows/release-check.yml` so public repository pushes and pull requests to `main` run the release gate on `macos-14` with Python 3.12.
 - Verified `bash scripts/release_check.sh` on `main` after adding the release-check workflow: harness check, 136 passing tests, CLI smoke, `sdist`/wheel build, `twine check`, clean wheel install smoke, and tracked-file hygiene guard all pass.
+- Clarified the release documentation boundary: single-machine package checks and CLI demos can use a local temporary root, while multi-Mac execution requires marker-verified shared storage.
+- Verified `bash scripts/release_check.sh` on `main` after shared-storage release scope docs: harness check, 137 passing tests, CLI smoke, `sdist`/wheel build, `twine check`, clean wheel install smoke, and tracked-file hygiene guard all pass.
+- Ran read-only `bash scripts/release_env_check.sh` after NAS mounting; local and both remote targets now pass the `/Volumes/MediaOrchard` shared-root existence check, but the gate still exits `1` because remote Worker venvs are missing.
+- Verified `/Volumes/MediaOrchard` is mounted as `smbfs` on local, `192.168.50.8`, and `192.168.50.9` with 29Ti total and 26Ti available; the shared-root marker file is still missing on all three targets.
