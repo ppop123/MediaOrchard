@@ -1,9 +1,15 @@
 # MediaOrchard 0.1 Release Runbook
 
+中文发布说明见 [RELEASE.zh-CN.md](RELEASE.zh-CN.md)。
+
 MediaOrchard 0.1 is a local-first release for a single Mac running real-media
 jobs through the Controller and Worker CLI. Multi-machine execution is supported
 by the code paths and bootstrap tooling, but must not be advertised as ready
 until the target Worker machines pass the release environment gate.
+
+The release is explicitly agent native: Controller policy, Scheduler scoring,
+Worker lifecycle, structured tool execution, and verification scripts are all
+designed to be operated and audited by coding agents as well as humans.
 
 ## Release States
 

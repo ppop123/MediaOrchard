@@ -4,8 +4,11 @@
 
 - `../AGENTS.md`
 - `../README.md`
+- `../README.zh-CN.md`
 - `../ARCHITECTURE.md`
 - `QUALITY.md`
+- `../RELEASE.md`
+- `../RELEASE.zh-CN.md`
 - `RELEASE_CHECKLIST.md`
 - `../plan.md`
 

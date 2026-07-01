@@ -1,8 +1,10 @@
 # MediaOrchard Grove
 
+中文说明见 [README.zh-CN.md](README.zh-CN.md)，中文发布说明见 [RELEASE.zh-CN.md](RELEASE.zh-CN.md)。
+
 MediaOrchard Grove is a local media processing scheduler for coordinating trusted Mac Workers that run `ffmpeg`, `ffprobe`, and `mlx-whisper` workloads.
 
-The MVP is intentionally deterministic: the Controller owns policy, scheduling, durable state, and recovery; Workers authenticate, report resources, claim only assigned Steps, and execute registered structured tool calls.
+The MVP is intentionally deterministic and agent native: the Controller owns policy, scheduling, durable state, and recovery; Workers authenticate, report resources, claim only assigned Steps, and execute registered structured tool calls.
 
 ## Status
 

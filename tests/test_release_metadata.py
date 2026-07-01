@@ -87,6 +87,20 @@ def test_release_docs_define_shared_storage_release_scope():
     assert "Multi-Mac real-media execution requires marker-verified shared storage" in readme
 
 
+def test_chinese_docs_present_agent_native_release_positioning():
+    readme = ROOT / "README.zh-CN.md"
+    release = ROOT / "RELEASE.zh-CN.md"
+
+    assert readme.exists()
+    assert release.exists()
+
+    combined = readme.read_text() + "\n" + release.read_text()
+    assert "agent native" in combined
+    assert "Agent 原生" in combined
+    assert "192.168.50.8" in combined
+    assert "192.168.50.9" in combined
+
+
 def test_release_env_check_script_runs_preflight_and_bootstrap_dry_run(tmp_path):
     script = ROOT / "scripts" / "release_env_check.sh"
     fake_python = tmp_path / "python"
