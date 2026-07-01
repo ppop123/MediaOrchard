@@ -18,7 +18,7 @@ This project is not ready for public release until every required gate below has
 - [x] `bash scripts/verify.sh` and `bash scripts/smoke.sh` pass from a clean checkout.
 - [x] No secrets, source media, cache files, generated outputs, or local databases are tracked by Git.
 - [x] Worker preflight can check local and SSH targets without modifying remote machines.
-- [x] Repository has explicit MIT license text.
+- [x] Repository has explicit BSD-2-Clause license text.
 - [x] Release check builds `sdist` and wheel artifacts and validates metadata with `twine check`.
 - [x] Worker bootstrap commands can be generated in dry-run mode before any target machine is modified.
 - [x] Worker bootstrap can target a local release wheel instead of assuming the package is already published to an index.

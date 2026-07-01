@@ -11,13 +11,16 @@ def collapsed_text(path: Path) -> str:
     return " ".join(path.read_text().split())
 
 
-def test_project_has_explicit_mit_license_file():
+def test_project_has_explicit_bsd_2_clause_license_file():
     license_file = ROOT / "LICENSE"
+    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text())
 
     assert license_file.exists()
     text = license_file.read_text()
-    assert "MIT License" in text
-    assert "Permission is hereby granted" in text
+    assert pyproject["project"]["license"] == "BSD-2-Clause"
+    assert "BSD 2-Clause License" in text
+    assert "Redistribution and use in source and binary forms" in text
+    assert "DISCLAIMED" in text
 
 
 def test_dev_extra_contains_release_build_tools():

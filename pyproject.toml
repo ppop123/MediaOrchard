@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Local multi-Mac media processing scheduler for ffmpeg and whisper workloads."
 readme = "README.md"
 requires-python = ">=3.11"
-license = "MIT"
+license = "BSD-2-Clause"
 authors = [
   { name = "MediaOrchard contributors" }
 ]

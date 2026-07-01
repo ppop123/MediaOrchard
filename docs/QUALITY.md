@@ -32,7 +32,7 @@
 - Read-only Worker preflight verified the current local and SSH target readiness state without modifying remote machines.
 - Worker bootstrap dry-run produces auditable target setup commands before any remote machine is modified.
 - Wheel-based bootstrap dry-run documents the target package path that must exist before `--execute`.
-- Release metadata coverage verifies explicit MIT license text, release build tooling in the dev extra, and executable release check script.
+- Release metadata coverage verifies explicit BSD-2-Clause license text, release build tooling in the dev extra, and executable release check script.
 - Release check builds `sdist` and wheel artifacts in an isolated build directory, validates them with `twine check`, installs the wheel into a temporary virtual environment, and checks for tracked local artifacts, secrets, databases, and media files.
 
 ## Partial Surfaces
