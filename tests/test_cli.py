@@ -1,9 +1,18 @@
+import re
+
 from typer.testing import CliRunner
 
 from mediaorchard.cli import main as cli_main
 from mediaorchard.cli.main import app
 from mediaorchard.worker.bootstrap import WorkerBootstrapResult
 from mediaorchard.worker.preflight import PreflightCheck, WorkerPreflightResult
+
+
+_ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+
+
+def _plain_output(output: str) -> str:
+    return _ANSI_ESCAPE_RE.sub("", output)
 
 
 def test_cli_help_loads():
@@ -310,7 +319,7 @@ def test_doctor_worker_rejects_marker_value_without_marker():
     )
 
     assert result.exit_code != 0
-    assert "--shared-root-marker-value requires --shared-root-marker" in result.output
+    assert "--shared-root-marker-value requires --shared-root-marker" in _plain_output(result.output)
 
 
 def test_doctor_worker_bootstrap_defaults_to_dry_run():
@@ -395,7 +404,7 @@ def test_doctor_worker_bootstrap_rejects_wheel_with_custom_package_spec(tmp_path
     )
 
     assert result.exit_code != 0
-    assert "--package-spec cannot be combined with --wheel" in result.output
+    assert "--package-spec cannot be combined with --wheel" in _plain_output(result.output)
 
 
 def test_doctor_worker_bootstrap_execute_can_copy_local_wheel(monkeypatch, tmp_path):
@@ -440,4 +449,4 @@ def test_doctor_worker_bootstrap_rejects_copy_wheel_without_wheel():
     )
 
     assert result.exit_code != 0
-    assert "--copy-wheel requires --wheel" in result.output
+    assert "--copy-wheel requires --wheel" in _plain_output(result.output)
