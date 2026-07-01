@@ -119,7 +119,7 @@ export MEDIAORCHARD_API_KEY_HASH='sha256:replace-with-generated-hash'
 export MEDIAORCHARD_SHARED_ROOT='/Volumes/MediaOrchard'
 export MEDIAORCHARD_DATABASE_URL='sqlite:///mediaorchard.db'
 export MEDIAORCHARD_NODE_PRIORITIES='192.168.50.8=100,192.168.50.9=100,local=0'
-mediaorchard controller start --host 0.0.0.0 --port 8765
+mediaorchard controller start --host 0.0.0.0 --port 18765
 ```
 
 You can also pass priorities directly, for example:
@@ -172,7 +172,7 @@ export MEDIAORCHARD_API_KEY_HASH="$(
 export MEDIAORCHARD_SHARED_ROOT="$demo_root"
 export MEDIAORCHARD_DATABASE_URL="sqlite:///$demo_root/controller.db"
 
-mediaorchard controller start --host 127.0.0.1 --port 8765
+mediaorchard controller start --host 127.0.0.1 --port 18765
 ```
 
 In a second terminal, set `demo_root` to the printed path from the first terminal:
@@ -181,7 +181,7 @@ In a second terminal, set `demo_root` to the printed path from the first termina
 demo_root=/tmp/mediaorchard-demo.XXXXXX
 export MEDIAORCHARD_API_KEY='replace-me'
 mediaorchard submit "$demo_root/inbox/demo.mp4" \
-  --controller-url http://127.0.0.1:8765 \
+  --controller-url http://127.0.0.1:18765 \
   --goal video_to_subtitle \
   --output srt \
   --output txt \
@@ -190,12 +190,12 @@ mediaorchard submit "$demo_root/inbox/demo.mp4" \
 
 mediaorchard worker start \
   --node-id local-demo \
-  --controller-url http://127.0.0.1:8765 \
+  --controller-url http://127.0.0.1:18765 \
   --shared-root "$demo_root" \
   --once
 
-mediaorchard jobs --controller-url http://127.0.0.1:8765
-mediaorchard nodes --controller-url http://127.0.0.1:8765
+mediaorchard jobs --controller-url http://127.0.0.1:18765
+mediaorchard nodes --controller-url http://127.0.0.1:18765
 ```
 
 Expected demo output files:
@@ -307,7 +307,7 @@ export MEDIAORCHARD_API_KEY_HASH="$(
 export MEDIAORCHARD_SHARED_ROOT="$real_root"
 export MEDIAORCHARD_DATABASE_URL="sqlite:///$real_root/controller.db"
 
-mediaorchard controller start --host 127.0.0.1 --port 8765
+mediaorchard controller start --host 127.0.0.1 --port 18765
 ```
 
 In a second terminal, set `real_root` to the printed path and run:
@@ -316,7 +316,7 @@ In a second terminal, set `real_root` to the printed path and run:
 real_root=/tmp/mediaorchard-real-cli.XXXXXX
 export MEDIAORCHARD_API_KEY='replace-me'
 mediaorchard submit "$real_root/inbox/demo.mp4" \
-  --controller-url http://127.0.0.1:8765 \
+  --controller-url http://127.0.0.1:18765 \
   --goal video_to_subtitle \
   --output srt \
   --output txt \
@@ -325,7 +325,7 @@ mediaorchard submit "$real_root/inbox/demo.mp4" \
 
 mediaorchard worker start \
   --node-id local-real \
-  --controller-url http://127.0.0.1:8765 \
+  --controller-url http://127.0.0.1:18765 \
   --shared-root "$real_root" \
   --execution-mode real \
   --python python3 \
@@ -333,7 +333,7 @@ mediaorchard worker start \
   --tool-timeout-seconds 180 \
   --once
 
-mediaorchard jobs --controller-url http://127.0.0.1:8765
+mediaorchard jobs --controller-url http://127.0.0.1:18765
 ```
 
 ## Verification

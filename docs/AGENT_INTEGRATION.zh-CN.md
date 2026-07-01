@@ -14,7 +14,7 @@ MediaOrchard 当前有两类 agent 角色：
 调用前先准备：
 
 ```bash
-export MEDIAORCHARD_CONTROLLER_URL='http://127.0.0.1:8765'
+export MEDIAORCHARD_CONTROLLER_URL='http://127.0.0.1:18765'
 export MEDIAORCHARD_API_KEY='replace-with-raw-api-key'
 export MEDIAORCHARD_SHARED_ROOT='/Volumes/MediaOrchard'
 ```
@@ -29,7 +29,7 @@ export MEDIAORCHARD_NODE_PRIORITIES='192.168.50.8=100,192.168.50.9=100,local=0'
 
 mediaorchard controller start \
   --host 0.0.0.0 \
-  --port 8765 \
+  --port 18765 \
   --shared-root "$MEDIAORCHARD_SHARED_ROOT"
 ```
 

@@ -62,7 +62,7 @@ export MEDIAORCHARD_SHARED_ROOT='/Volumes/MediaOrchard'
 export MEDIAORCHARD_DATABASE_URL='sqlite:///mediaorchard.db'
 export MEDIAORCHARD_NODE_PRIORITIES='192.168.50.8=100,192.168.50.9=100,local=0'
 
-mediaorchard controller start --host 0.0.0.0 --port 8765
+mediaorchard controller start --host 0.0.0.0 --port 18765
 ```
 
 也可以直接传节点优先级：

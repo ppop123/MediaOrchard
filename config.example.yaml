@@ -1,6 +1,6 @@
 controller:
   host: "0.0.0.0"
-  port: 8765
+  port: 18765
   database_url: "sqlite:///mediaorchard.db"
   api_key_hash: "sha256:replace-with-generated-hash"
   api_key_hash_algorithm: "sha256"

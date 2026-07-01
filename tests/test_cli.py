@@ -62,6 +62,28 @@ def test_controller_start_invokes_runtime(monkeypatch, tmp_path):
     assert calls[0].node_priorities == {"192.168.50.8": 100, "192.168.50.9": 100}
 
 
+def test_controller_start_defaults_to_non_conflicting_port(monkeypatch, tmp_path):
+    calls = []
+    monkeypatch.setattr(cli_main, "run_controller", lambda config: calls.append(config))
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "controller",
+            "start",
+            "--database-url",
+            f"sqlite:///{tmp_path / 'controller.db'}",
+            "--api-key-hash",
+            "sha256:test",
+            "--shared-root",
+            str(tmp_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert calls[0].port == 18765
+
+
 def test_controller_start_requires_api_key_hash(tmp_path):
     result = CliRunner().invoke(
         app,
@@ -97,7 +119,7 @@ def test_worker_start_invokes_runtime_once(monkeypatch, tmp_path):
             "--node-name",
             "Mac Studio",
             "--controller-url",
-            "http://127.0.0.1:8765",
+            "http://127.0.0.1:18765",
             "--api-key",
             "secret",
             "--shared-root",
@@ -126,6 +148,33 @@ def test_worker_start_invokes_runtime_once(monkeypatch, tmp_path):
     assert calls[0].tool_timeout_seconds == 77
 
 
+def test_worker_start_defaults_to_new_controller_port(monkeypatch, tmp_path):
+    calls = []
+
+    def fake_run_worker(config):
+        calls.append(config)
+        return []
+
+    monkeypatch.setattr(cli_main, "run_worker", fake_run_worker)
+    result = CliRunner().invoke(
+        app,
+        [
+            "worker",
+            "start",
+            "--node-id",
+            "mac-studio",
+            "--api-key",
+            "secret",
+            "--shared-root",
+            str(tmp_path),
+            "--once",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert calls[0].controller_url == "http://127.0.0.1:18765"
+
+
 def test_nodes_lists_controller_nodes(monkeypatch):
     monkeypatch.setattr(
         cli_main,
@@ -140,7 +189,7 @@ def test_nodes_lists_controller_nodes(monkeypatch):
         [
             "nodes",
             "--controller-url",
-            "http://127.0.0.1:8765",
+            "http://127.0.0.1:18765",
             "--api-key",
             "secret",
         ],
@@ -165,7 +214,7 @@ def test_jobs_lists_controller_jobs(monkeypatch):
         [
             "jobs",
             "--controller-url",
-            "http://127.0.0.1:8765",
+            "http://127.0.0.1:18765",
             "--api-key",
             "secret",
         ],
@@ -192,7 +241,7 @@ def test_submit_posts_job_to_controller(monkeypatch, tmp_path):
             "submit",
             str(input_file),
             "--controller-url",
-            "http://127.0.0.1:8765",
+            "http://127.0.0.1:18765",
             "--api-key",
             "secret",
             "--goal",
@@ -232,7 +281,7 @@ def test_submit_rejects_missing_input_file(monkeypatch, tmp_path):
             "submit",
             str(tmp_path / "missing.mp4"),
             "--controller-url",
-            "http://127.0.0.1:8765",
+            "http://127.0.0.1:18765",
             "--api-key",
             "secret",
         ],

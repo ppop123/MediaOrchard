@@ -28,11 +28,14 @@ controller_app = typer.Typer(help="Run and inspect the Controller service.")
 worker_app = typer.Typer(help="Run and inspect Worker agents.")
 doctor_app = typer.Typer(help="Run release-readiness diagnostics.")
 
+DEFAULT_CONTROLLER_PORT = 18765
+DEFAULT_CONTROLLER_URL = f"http://127.0.0.1:{DEFAULT_CONTROLLER_PORT}"
+
 
 @controller_app.command("start")
 def controller_start(
     host: str = typer.Option("0.0.0.0", "--host"),
-    port: int = typer.Option(8765, "--port"),
+    port: int = typer.Option(DEFAULT_CONTROLLER_PORT, "--port"),
     database_url: str = typer.Option(
         "sqlite:///mediaorchard.db",
         "--database-url",
@@ -77,7 +80,7 @@ def worker_start(
     node_id: str = typer.Option(..., "--node-id"),
     node_name: str | None = typer.Option(None, "--node-name"),
     controller_url: str = typer.Option(
-        "http://127.0.0.1:8765",
+        DEFAULT_CONTROLLER_URL,
         "--controller-url",
         envvar="MEDIAORCHARD_CONTROLLER_URL",
     ),
@@ -132,7 +135,7 @@ def worker_start(
 @app.command()
 def jobs(
     controller_url: str = typer.Option(
-        "http://127.0.0.1:8765",
+        DEFAULT_CONTROLLER_URL,
         "--controller-url",
         envvar="MEDIAORCHARD_CONTROLLER_URL",
     ),
@@ -165,7 +168,7 @@ def jobs(
 @app.command()
 def nodes(
     controller_url: str = typer.Option(
-        "http://127.0.0.1:8765",
+        DEFAULT_CONTROLLER_URL,
         "--controller-url",
         envvar="MEDIAORCHARD_CONTROLLER_URL",
     ),
@@ -199,7 +202,7 @@ def nodes(
 def submit(
     input_file: Path = typer.Argument(...),
     controller_url: str = typer.Option(
-        "http://127.0.0.1:8765",
+        DEFAULT_CONTROLLER_URL,
         "--controller-url",
         envvar="MEDIAORCHARD_CONTROLLER_URL",
     ),
