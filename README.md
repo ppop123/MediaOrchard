@@ -1,6 +1,6 @@
 # MediaOrchard Grove
 
-中文说明见 [README.zh-CN.md](README.zh-CN.md)，中文发布说明见 [RELEASE.zh-CN.md](RELEASE.zh-CN.md)。
+中文说明见 [README.zh-CN.md](README.zh-CN.md)，中文发布说明见 [RELEASE.zh-CN.md](RELEASE.zh-CN.md)。Agent integration guide: [docs/AGENT_INTEGRATION.zh-CN.md](docs/AGENT_INTEGRATION.zh-CN.md).
 
 MediaOrchard Grove is a local media processing scheduler for coordinating trusted Mac Workers that run `ffmpeg`, `ffprobe`, and `mlx-whisper` workloads.
 

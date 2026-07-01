@@ -6,6 +6,7 @@
 - `../README.md`
 - `../README.zh-CN.md`
 - `../ARCHITECTURE.md`
+- `AGENT_INTEGRATION.zh-CN.md`
 - `QUALITY.md`
 - `../RELEASE.md`
 - `../RELEASE.zh-CN.md`

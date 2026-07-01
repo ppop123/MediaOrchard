@@ -4,6 +4,8 @@ MediaOrchard 0.1 的发布定位是：**本地优先、Mac Worker 优先、Agent
 
 这里的 agent native 不是一句包装话，而是发布边界：系统的 Job、Plan、Step、调度、Worker 生命周期、工具执行和验证脚本，都要能被 agent 可靠读取、执行、复核和恢复。
 
+外部 agent 的实际调用方式见 [docs/AGENT_INTEGRATION.zh-CN.md](docs/AGENT_INTEGRATION.zh-CN.md)。该文档区分操作员 agent 和执行 agent，并给出 CLI、HTTP API、Worker 生命周期的调用示例。
+
 ## 本次发布口径
 
 0.1 是 MVP release hardening 版本，重点不是做一个大而全的媒体平台，而是把 agent native 的控制面和执行面打牢：
@@ -101,4 +103,3 @@ mediaorchard controller start \
 - 不应说任意公网或不可信 Worker 可接入。
 - 不应说没有共享存储也能做多机器真实媒体执行。
 - 不应说高优先级机器可以绕过资源和健康检查。
-

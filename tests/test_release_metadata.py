@@ -101,6 +101,22 @@ def test_chinese_docs_present_agent_native_release_positioning():
     assert "192.168.50.9" in combined
 
 
+def test_chinese_agent_integration_doc_explains_invocation_contracts():
+    doc = ROOT / "docs" / "AGENT_INTEGRATION.zh-CN.md"
+
+    assert doc.exists()
+    text = doc.read_text()
+    assert "外部 agent 如何调用 MediaOrchard" in text
+    assert "操作员 agent" in text
+    assert "执行 agent" in text
+    assert "POST /jobs" in text
+    assert "POST /steps/claim-next" in text
+    assert "X-MediaOrchard-Node-Id" in text
+    assert "assignment_epoch" in text
+    assert "mediaorchard submit" in text
+    assert "curl" in text
+
+
 def test_release_env_check_script_runs_preflight_and_bootstrap_dry_run(tmp_path):
     script = ROOT / "scripts" / "release_env_check.sh"
     fake_python = tmp_path / "python"
