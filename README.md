@@ -352,7 +352,7 @@ export SHARED_ROOT_MARKER_VALUE='replace-with-token-from-the-shared-root-marker'
 bash scripts/release_env_check.sh
 ```
 
-This check is read-only for SSH targets. It runs local and remote Worker preflight checks, builds a temporary wheel unless `MEDIAORCHARD_WHEEL` points to an existing one, and prints the `worker-bootstrap --copy-wheel` dry-run for the configured targets. If `SHARED_ROOT_MARKER` and `SHARED_ROOT_MARKER_VALUE` are set, the preflight also proves each target can read the same shared storage marker. It exits non-zero while Python, whisper, media tools, the shared root, or the marker are not ready.
+This check is read-only for SSH targets. It runs local and remote Worker preflight checks, builds a temporary wheel unless `MEDIAORCHARD_WHEEL` points to an existing one, and prints the `worker-bootstrap --copy-wheel` dry-run for the configured targets. The final multi-machine gate requires `SHARED_ROOT_MARKER` and `SHARED_ROOT_MARKER_VALUE` by default so preflight proves each target can read the same shared storage marker. For early diagnostics before the marker exists, set `REQUIRE_SHARED_ROOT_MARKER=0`; do not use that override for release claims. The check exits non-zero while Python, whisper, media tools, the shared root, or the marker are not ready.
 
 Focused checks:
 

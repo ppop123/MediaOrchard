@@ -16,6 +16,7 @@ echo "This script does not execute remote bootstrap."
 shared_root="${SHARED_ROOT:-/Volumes/MediaOrchard}"
 shared_root_marker="${SHARED_ROOT_MARKER:-}"
 shared_root_marker_value="${SHARED_ROOT_MARKER_VALUE:-}"
+require_shared_root_marker="${REQUIRE_SHARED_ROOT_MARKER:-1}"
 install_root="${INSTALL_ROOT:-/Users/wangyan/.mediaorchard}"
 worker_python="${WORKER_PYTHON:-/opt/homebrew/bin/python3.14}"
 local_runtime_python="${LOCAL_RUNTIME_PYTHON:-.venv/bin/python}"
@@ -27,6 +28,10 @@ remote_preflight_targets="${REMOTE_PREFLIGHT_TARGETS-wangyan@192.168.50.8 wangya
 bootstrap_targets="${BOOTSTRAP_TARGETS-wangyan@192.168.50.8 wangyan@192.168.50.9}"
 status=0
 preflight_marker_args=()
+if [ "$require_shared_root_marker" != "0" ] && [ "$require_shared_root_marker" != "1" ]; then
+  echo "REQUIRE_SHARED_ROOT_MARKER must be 0 or 1." >&2
+  exit 1
+fi
 if [ -n "$shared_root_marker_value" ] && [ -z "$shared_root_marker" ]; then
   echo "SHARED_ROOT_MARKER_VALUE requires SHARED_ROOT_MARKER." >&2
   exit 1
@@ -67,6 +72,15 @@ if [ -n "$remote_preflight_targets" ]; then
 fi
 if [ -n "$bootstrap_targets" ]; then
   read -r -a bootstrap_target_values <<< "$bootstrap_targets"
+fi
+
+if [ "$require_shared_root_marker" = "1" ] && {
+  [ "${#remote_targets[@]}" -gt 0 ] || [ "${#bootstrap_target_values[@]}" -gt 0 ]; }; then
+  if [ -z "$shared_root_marker" ] || [ -z "$shared_root_marker_value" ]; then
+    echo "SHARED_ROOT_MARKER and SHARED_ROOT_MARKER_VALUE are required for the final multi-machine release environment gate." >&2
+    echo "Set REQUIRE_SHARED_ROOT_MARKER=0 only for read-only diagnostics before the shared-root marker is prepared." >&2
+    exit 1
+  fi
 fi
 
 if [ "${#local_targets[@]}" -gt 0 ]; then

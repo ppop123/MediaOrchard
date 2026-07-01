@@ -57,9 +57,12 @@ bash scripts/release_env_check.sh
 
 This command does not execute remote bootstrap. It runs Worker preflight checks,
 builds or reuses a wheel, and prints the `mediaorchard doctor worker-bootstrap`
-dry-run with `--copy-wheel` for the configured SSH targets. When the marker
-environment variables are set, the preflight also verifies every target reads
-the expected marker token from the shared root.
+dry-run with `--copy-wheel` for the configured SSH targets. The final
+multi-machine gate requires `SHARED_ROOT_MARKER` and
+`SHARED_ROOT_MARKER_VALUE` by default so preflight verifies every target reads
+the expected marker token from the shared root. For early diagnostics before the
+marker exists, set `REQUIRE_SHARED_ROOT_MARKER=0`; do not use that override for
+release claims.
 
 ## Worker Bootstrap
 
