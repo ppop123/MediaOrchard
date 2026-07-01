@@ -28,14 +28,16 @@ This project is not ready for public release until every required gate below has
 - [x] `RELEASE.md` defines package, single-machine, and multi-machine release decision gates.
 - [x] Worker preflight can verify a shared-root marker token so multi-machine release checks can prove targets read the same shared storage.
 - [x] GitHub Actions release-check workflow runs the public release gate on push and pull request events for `main`.
+- [x] Target Workers on `192.168.50.8` and `192.168.50.9` are bootstrapped from a local release wheel with `mlx-whisper` installed in per-user virtual environments.
+- [x] Marker-verified multi-machine release environment check exits `0` for local, `192.168.50.8`, and `192.168.50.9`.
 
 ## Current Evidence
 
-- `bash scripts/verify.sh`: harness check plus 137 tests pass on `main`.
+- `bash scripts/verify.sh`: harness check plus 140 tests pass on `main`.
 - `bash scripts/smoke.sh`: CLI help renders successfully.
-- `bash scripts/release_check.sh`: harness check, 137 tests, CLI smoke, `python -m build`, `twine check`, clean wheel install smoke, and tracked-file hygiene guard pass on `main`.
-- `bash scripts/release_env_check.sh`: read-only preflight plus bootstrap dry-run runs on `main` and exits `1` because the remote Worker venvs are still missing; local `.venv/bin/python` imports `mlx_whisper` 0.4.3 and all targets now pass the `/Volumes/MediaOrchard` shared-root existence check.
-- Read-only NAS mount verification found `/Volumes/MediaOrchard` mounted as `smbfs` on local, `192.168.50.8`, and `192.168.50.9`, with 29Ti total and 26Ti available on each target. The shared-root marker file is still missing on all three targets, so the final multi-machine gate still needs a marker token before claiming every target reads the same storage.
+- `bash scripts/release_check.sh`: harness check, 140 tests, CLI smoke, `python -m build`, `twine check`, clean wheel install smoke, and tracked-file hygiene guard pass on `main`.
+- `bash scripts/release_env_check.sh` with `SHARED_ROOT_MARKER=.mediaorchard-shared-root-id` and the marker value read from `/Volumes/MediaOrchard`: exits `0` on `main`; local, `192.168.50.8`, and `192.168.50.9` all pass Python 3.11+, `ffmpeg`, `ffprobe`, `mlx_whisper` 0.4.3, `/Volumes/MediaOrchard`, and shared-root marker checks.
+- NAS mount verification found `/Volumes/MediaOrchard` mounted as `smbfs` on local, `192.168.50.8`, and `192.168.50.9`, with 29Ti total and 26Ti available on each target. The marker file is readable with the same value from all three targets.
 - Process-level CLI E2E smoke passed on `main` from a temp shared root at `/tmp/mediaorchard-main-cli-e2e.GldT3h/output/job_027f3f57c6f2`: `controller start`, `submit`, `worker start --once`, `jobs`, and artifact checks for `subtitle.srt`, `transcript.txt`, `transcript.json`, and `quality_report.json`.
 - Process-level real-media CLI E2E smoke passed on `main` from `/tmp/mediaorchard-main-real-cli-e2e.B8Gvyp/output/job_825c8527e177`: generated an input mp4 with `say` and `ffmpeg`, then ran `controller start`, `submit`, `worker start --execution-mode real --once`, `jobs`, and artifact checks for `input_meta.json`, `audio.wav`, `subtitle.srt`, `transcript.txt`, `transcript.json`, `quality_report.json`, `report.md`, and passed quality status.
 - Git repository initialized on `main`.
@@ -61,9 +63,9 @@ This project is not ready for public release until every required gate below has
 - `RELEASE.md` documents the 0.1 release states, required gates, explicit confirmation requirement before remote `--execute`, and the rule not to claim multi-machine real-media execution until `bash scripts/release_env_check.sh` exits `0`.
 - Worker preflight supports optional shared-root marker validation via `--shared-root-marker` and `--shared-root-marker-value`; `scripts/release_env_check.sh` passes `SHARED_ROOT_MARKER` and `SHARED_ROOT_MARKER_VALUE` through to local and SSH preflight so the final multi-machine gate can verify the targets read the same shared storage.
 - `.github/workflows/release-check.yml` runs `PYTHON_FOR_VENV=.venv/bin/python bash scripts/release_check.sh` on `macos-14` with Python 3.12 for push and pull request events targeting `main`.
-- Read-only target probes on `192.168.50.8` and `192.168.50.9` found both machines have `/opt/homebrew/bin/python3.14` plus `ffmpeg`/`ffprobe`, and now see `/Volumes/MediaOrchard` as an SMB-mounted NAS path.
-- Post-local-venv read-only Worker preflight on `main` still fails for multi-machine execution: local `.venv/bin/python` imports `mlx_whisper` 0.4.3 and all targets pass the shared-root existence check, but both remotes still lack `/Users/wangyan/.mediaorchard/venv/bin/python`.
+- Worker bootstrap execution with `--copy-wheel --execute` passes on `192.168.50.8` and `192.168.50.9` after exporting Homebrew paths in the bootstrap script for non-login SSH shells.
+- Post-bootstrap Worker verification passes on both remotes: `/Users/wangyan/.mediaorchard/venv/bin/python` imports `mlx_whisper` 0.4.3, `mediaorchard --help` runs, and `pip check` reports no broken requirements.
 
 ## Current Release Status
 
-Single-Mac release candidate for real-media CLI execution. The code now has current evidence for Controller/Worker CLI orchestration, durable state, scheduling, deterministic smoke mode, one local real-media Worker run through `ffprobe`, `ffmpeg`, and `mlx_whisper`, read-only Worker preflight diagnostics, NAS-backed shared-root mounting, and repeatable Worker bootstrap commands with optional wheel copying. Do not promise multi-Mac real-media execution publicly until the target Workers are bootstrapped and then pass `mediaorchard doctor worker` with Python 3.11+, `ffmpeg`, `ffprobe`, a working whisper backend, and a marker-verified shared root mounted at the same resolved path.
+Release 0.1 candidate for package, single-Mac real-media CLI execution, and marker-verified multi-Mac Worker readiness. The code now has current evidence for Controller/Worker CLI orchestration, durable state, scheduling, deterministic smoke mode, one local real-media Worker run through `ffprobe`, `ffmpeg`, and `mlx_whisper`, NAS-backed shared-root mounting, bootstrapped target Worker virtual environments, and a passing marker-verified multi-machine release environment gate.
