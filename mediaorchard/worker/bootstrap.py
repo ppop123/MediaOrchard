@@ -64,6 +64,7 @@ def build_bootstrap_script(config: WorkerBootstrapConfig) -> str:
     lines.extend(
         [
             "set -euo pipefail",
+            'export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"',
             f"{python} - <<'PY_VERSION'",
             "import sys",
             "raise SystemExit(0 if sys.version_info >= (3, 11) else 1)",

@@ -27,9 +27,17 @@ def test_build_bootstrap_script_sets_up_venv_shared_root_and_checks_tools():
         )
     )
 
+    path_index = script.index("export PATH=")
+    ffmpeg_index = script.index("command -v ffmpeg >/dev/null")
+    ffprobe_index = script.index("command -v ffprobe >/dev/null")
+
     assert "/opt/homebrew/bin/python3.13 -m venv /Users/wangyan/.mediaorchard/venv" in script
     assert "/Users/wangyan/.mediaorchard/venv/bin/python -m pip install mediaorchard==0.1.0 mlx-whisper" in script
     assert "mkdir -p /Volumes/MediaOrchard/inbox /Volumes/MediaOrchard/work /Volumes/MediaOrchard/output /Volumes/MediaOrchard/logs /Volumes/MediaOrchard/cache" in script
+    assert "/opt/homebrew/bin" in script
+    assert "/usr/local/bin" in script
+    assert path_index < ffmpeg_index
+    assert path_index < ffprobe_index
     assert "command -v ffmpeg >/dev/null" in script
     assert "command -v ffprobe >/dev/null" in script
     assert "import mlx_whisper" in script
